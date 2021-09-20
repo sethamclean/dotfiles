@@ -1,0 +1,32 @@
+[user]
+    name = Seth McLean
+    email = seth-mclean@idexx.com
+
+[alias]
+    tree = log --oneline --graph --color --all --decorate
+	d = difftool
+
+[core]
+  editor = nvim
+	excludesfile = ~/.gitignore
+
+[push]
+    default = simple
+	followTags = true
+
+[merge]
+	tool = vimdiff3
+[mergetool]
+	path = nvim
+[mergetool "vimdiff"]
+	path = nvim
+[mergetool "vimdiff3"]
+	path = nvim
+[diff]
+	tool = vimdiff3
+[difftool]
+	prompt = false
+[rerere]
+	enabled = 1
+[rebase]
+	instructionFormat = (%an <%ae>) %s
