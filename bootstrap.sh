@@ -3,7 +3,7 @@ set -euo pipefail
 
 setup_dotfiles(){
     for package in */; do
-        stow $package
+        stow --target=${HOME} ${package}
     done
 }
 
