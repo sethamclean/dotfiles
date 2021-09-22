@@ -15,8 +15,13 @@ autoload -Uz _zinit
 #------------------------------------------------------------------------------
 # zsh plugins via zinit
 #------------------------------------------------------------------------------
-zinit ice depth=1; zinit light sindresorhus/pure
+zinit ice depth=1; zinit light spaceship-prompt/spaceship-prompt
 zinit light zsh-users/zsh-autosuggestions
+
+#------------------------------------------------------------------------------
+# Theme settings
+#------------------------------------------------------------------------------
+export SPACESHIP_VI_MODE_SHOW="0"
 
 #------------------------------------------------------------------------------
 # User configuration
