@@ -49,7 +49,6 @@ let packages = [
             \ 'vim-scripts/delimitMate.vim',
             \ 'vim-scripts/javacomplete',
             \ 'Chiel92/vim-autoformat',
-            \ 'vim-scripts/UltiSnips',
             \ 'honza/vim-snippets',
             \ 'SirVer/ultisnips',
             \ 'Shougo/denite.nvim',
