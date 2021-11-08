@@ -1,1 +1,3 @@
-def ec2_list: .Reservations[].Instances[] | { Name: .Tags[] | select(.Key=="Name").Value, Status: .State.Name, Type: .InstanceType, Launched: .LaunchTime };
+def to_table: [.[]| with_entries( .key |= ascii_downcase ) ]
+      |    (.[0] |keys_unsorted | @tsv)
+         , (.[]|.|map(.) |@tsv) ;
