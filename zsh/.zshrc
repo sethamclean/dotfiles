@@ -31,6 +31,14 @@ HYPHEN_INSENSITIVE="true"
 ENABLE_CORRECTION="true"
 COMPLETION_WAITING_DOTS="true"
 HIST_STAMPS="yyyy-mm-dd"
+HISTFILE=~/.zsh_history
+HISTFILESIZE=100000000
+HISTSIZE=100000000
+setopt INC_APPEND_HISTORY
+setopt EXTENDED_HISTORY
+setopt HIST_FIND_NO_DUPS
+setopt HIST_IGNORE_ALL_DUPS
+HISTTIMEFORMAT="[%F %T] "
 set -o vi
 
 #------------------------------------------------------------------------------
