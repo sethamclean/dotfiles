@@ -1,5 +1,5 @@
 #------------------------------------------------------------------------------
-# zinit            
+# zinit
 #------------------------------------------------------------------------------
 if [[ ! -f $HOME/.zinit/bin/zinit.zsh ]]; then
     print -P "%F{33}▓▒░ %F{220}Installing DHARMA Initiative Plugin Manager (zdharma-continuum
@@ -34,11 +34,14 @@ export HIST_STAMPS="yyyy-mm-dd"
 export HISTFILE=~/.zsh_history
 export HISTFILESIZE=100000000
 export HISTSIZE=100000000
+export SAVEHIST=100000000
 setopt INC_APPEND_HISTORY
 setopt EXTENDED_HISTORY
 setopt HIST_FIND_NO_DUPS
 setopt HIST_IGNORE_ALL_DUPS
-HISTTIMEFORMAT="[%F %T] "
+setopt appendhistory
+setopt SHARE_HISTORY
+export HISTTIMEFORMAT="[%F %T] "
 set -o vi
 
 #------------------------------------------------------------------------------
