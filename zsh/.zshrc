@@ -27,13 +27,13 @@ export SPACESHIP_VI_MODE_SHOW="0"
 #------------------------------------------------------------------------------
 # User configuration
 #------------------------------------------------------------------------------
-HYPHEN_INSENSITIVE="true"
-ENABLE_CORRECTION="true"
-COMPLETION_WAITING_DOTS="true"
-HIST_STAMPS="yyyy-mm-dd"
-HISTFILE=~/.zsh_history
-HISTFILESIZE=100000000
-HISTSIZE=100000000
+export HYPHEN_INSENSITIVE="true"
+export ENABLE_CORRECTION="true"
+export COMPLETION_WAITING_DOTS="true"
+export HIST_STAMPS="yyyy-mm-dd"
+export HISTFILE=~/.zsh_history
+export HISTFILESIZE=100000000
+export HISTSIZE=100000000
 setopt INC_APPEND_HISTORY
 setopt EXTENDED_HISTORY
 setopt HIST_FIND_NO_DUPS
