@@ -23,7 +23,9 @@ zinit light zsh-users/zsh-autosuggestions
 # zsh cd path
 #------------------------------------------------------------------------------
 setopt auto_cd
-cdpath=($HOME /workspaces)
+cdpath=($HOME /workspaces .. ../..)
+autoload -U compinit 
+compinit
 
 
 #------------------------------------------------------------------------------
