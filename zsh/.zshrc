@@ -116,7 +116,7 @@ fi
 #------------------------------------------------------------------------------
 # aws cli v2 container alias
 #------------------------------------------------------------------------------
-alias aws='docker run --rm -i -v /workspaces:/workspaces -v ~/:/root -v $(pwd):/aws amazon/aws-cli $@'
+alias aws='docker pull amazon/aws-cli && docker run --rm -i -e AWS_PROFILE=$AWS_PROFILE  -v /workspaces:/workspaces -v ~/:/root -v $(pwd):/aws amazon/aws-cli $@'
 
 #------------------------------------------------------------------------------
 # less
