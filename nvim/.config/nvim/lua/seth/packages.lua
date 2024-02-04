@@ -1,3 +1,5 @@
+-- Bootstrap lazy.nvim package manager
+local vim = vim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -12,6 +14,7 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 plugins = {
+  -- Add telescope fuzzy finder
   {
     'nvim-telescope/telescope.nvim', tag = '0.1.5',
     dependencies = { 'nvim-lua/plenary.nvim' },
@@ -24,11 +27,12 @@ plugins = {
       end)
     end,
   },
+  -- Add trouble to add lsp violatoin to gutter and quickfix
   {
     "folke/trouble.nvim",
      dependencies = { "nvim-tree/nvim-web-devicons" },
   },
-  { 
+  {
     "ellisonleao/gruvbox.nvim",
     lazy = false,
     priority = 1000,
@@ -36,6 +40,7 @@ plugins = {
       vim.cmd.colorscheme("gruvbox")
     end,
   },
+  -- Configure and install LSP servers using these plugins
   {
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -67,15 +72,24 @@ plugins = {
           "yamlls",
         }
       }
+      require("mason-lspconfig").setup_handlers {
+        -- The first entry (without a key) will be the default handler
+        -- and will be called for each installed server that doesn't have
+        -- a dedicated handler.
+        function (server_name) -- default handler (optional)
+            require("lspconfig")[server_name].setup {}
+        end,
+      }
     end,
   },
+  -- Fast AST based syntax highlighting
   {
     "nvim-treesitter/nvim-treesitter",
     build = ":TSUpdate",
     config = function()
       require'nvim-treesitter.configs'.setup {
     -- A list of parser names, or "all" (the five listed parsers should always be installed)
-    ensure_installed = { 
+    ensure_installed = {
       "c",
       "rust",
       "go",
@@ -113,4 +127,5 @@ plugins = {
   },
 }
 
+-- Kick off package install
 require("lazy").setup(plugins)
