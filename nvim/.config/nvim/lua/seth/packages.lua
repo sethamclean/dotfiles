@@ -1,5 +1,4 @@
 -- Bootstrap lazy.nvim package manager
-local vim = vim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not vim.loop.fs_stat(lazypath) then
   vim.fn.system({
@@ -13,7 +12,7 @@ if not vim.loop.fs_stat(lazypath) then
 end
 vim.opt.rtp:prepend(lazypath)
 
-plugins = {
+local plugins = {
   -- Add telescope fuzzy finder
   {
     'nvim-telescope/telescope.nvim', tag = '0.1.5',
@@ -79,6 +78,29 @@ plugins = {
         function (server_name) -- default handler (optional)
             require("lspconfig")[server_name].setup {}
         end,
+        ["lua_ls"] = function ()
+            require("lspconfig").lua_ls.setup {
+            settings = {
+              Lua = {
+                runtime = {
+                  version = 'LuaJIT',
+                },
+                diagnostics = {
+                  globals = {
+                    'vim',
+                    'require',
+                  }
+                },
+                workspace = {
+                  library = vim.api.nvim_get_runtime_file("", true),
+                },
+                telemetry = {
+                  enable = false,
+                }
+              }
+            }
+          }
+        end
       }
     end,
   },
