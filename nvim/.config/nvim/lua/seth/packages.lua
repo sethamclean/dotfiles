@@ -120,15 +120,30 @@ local plugins = {
       'hrsh7th/cmp-buffer',
       'hrsh7th/cmp-path',
       'hrsh7th/cmp-cmdline',
+      {
+        "L3MON4D3/LuaSnip",
+        version = "v2.2.*",
+        build = "make install_jsregexp"
+      },
     },
     config = function()
       local cmp = require('cmp')
-      cmp.setup({
+      cmp.setup {
         sources = cmp.config.sources({
           { name = 'nvim_lsp' },
+          { name = 'luasnip' },
+        },{
           { name = 'buffer' },
-        })
-      })
+        }),
+        mapping = cmp.mapping.preset.insert {
+          ['<tab>'] = cmp.mapping.confirm { select = true },
+        },
+        snippet = {
+          expand = function(args)
+            require('luasnip').lsp_expand(args.body)
+          end,
+        },
+      }
     end,
   },
   -- Git integration
