@@ -13,6 +13,20 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 local plugins = {
+  -- Key cheat sheet
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    init = function()
+      vim.o.timeout = true
+      vim.o.timeoutlen = 300
+    end,
+    opts = {
+      -- your configuration comes here
+      -- or leave it empty to use the default settings
+      -- refer to the configuration section below
+    }
+  },
   -- Copilot setup
   {
     "zbirenbaum/copilot-cmp",
@@ -41,17 +55,38 @@ local plugins = {
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       local builtin = require('telescope.builtin')
-      vim.keymap.set('n', '<leader>pf', builtin.find_files, {})
-      vim.keymap.set('n', '<C-p>', builtin.git_files, {})
-      vim.keymap.set('n', '<leader>ps', function()
-        builtin.grep_string({ search = vim.fn.input("Grep > ") })
-      end)
+      vim.keymap.set('n', '<leader>pf', builtin.find_files,
+                      { desc='telescope find files.'})
+      vim.keymap.set('n', '<leader>pg', builtin.git_files,
+                      { desc='telescope find in git files.'})
+      vim.keymap.set('n', '<leader>ps',
+                      function()
+                        builtin.grep_string({ search = vim.fn.input("Grep > ") })
+                      end,
+                      { desc='telescope grep.'})
     end,
+  },
+  {
+    'nvimdev/lspsaga.nvim',
+    config = function()
+        require('lspsaga').setup({
+
+        })
+        vim.keymap.set("n", "<leader>lh", '<cmd>Lspsaga hover_doc<CR>')
+        vim.keymap.set(
+          "n", "<leader>lf", '<cmd>Lspsaga finder<CR>')
+        vim.keymap.set("n", "<leader>lo", '<cmd>Lspsaga outline<CR>')
+    end,
+    dependencies = {
+        'nvim-treesitter/nvim-treesitter',
+        'nvim-tree/nvim-web-devicons'
+    },
   },
   -- Add trouble to add lsp violatoin to gutter and quickfix
   {
     "folke/trouble.nvim",
      dependencies = { "nvim-tree/nvim-web-devicons" },
+     opts = {}
   },
   {
     "ellisonleao/gruvbox.nvim",
