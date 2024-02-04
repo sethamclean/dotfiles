@@ -13,6 +13,13 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 local plugins = {
+  -- Undotree for local revisioning
+  {
+    'mbbill/undotree',
+    config = function()
+      vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle)
+    end,
+  },
   -- Add telescope fuzzy finder
   {
     'nvim-telescope/telescope.nvim', tag = '0.1.5',
@@ -104,6 +111,34 @@ local plugins = {
       }
     end,
   },
+  -- Autocompletion
+  {
+    'hrsh7th/nvim-cmp',
+    dependencies = {
+      'neovim/nvim-lspconfig',
+      'hrsh7th/cmp-nvim-lsp',
+      'hrsh7th/cmp-buffer',
+      'hrsh7th/cmp-path',
+      'hrsh7th/cmp-cmdline',
+    },
+    config = function()
+      local cmp = require('cmp')
+      cmp.setup({
+        sources = cmp.config.sources({
+          { name = 'nvim_lsp' },
+          { name = 'buffer' },
+        })
+      })
+    end,
+  },
+  -- Git integration
+  {
+    'lewis6991/gitsigns.nvim',
+    dependencies = { 'tpope/vim-fugitive' },
+    config = function()
+      require('gitsigns').setup()
+    end,
+  },
   -- Fast AST based syntax highlighting
   {
     "nvim-treesitter/nvim-treesitter",
@@ -111,6 +146,7 @@ local plugins = {
     config = function()
       require'nvim-treesitter.configs'.setup {
     -- A list of parser names, or "all" (the five listed parsers should always be installed)
+    modules = {}, -- lua_lsp says this is required despite being optional
     ensure_installed = {
       "c",
       "rust",
