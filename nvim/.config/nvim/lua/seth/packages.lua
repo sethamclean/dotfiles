@@ -13,6 +13,21 @@ end
 vim.opt.rtp:prepend(lazypath)
 
 local plugins = {
+  -- Copilot setup
+  {
+    "zbirenbaum/copilot-cmp",
+    dependencies = {
+      "zbirenbaum/copilot.lua",
+      cmd = "Copilot",
+      event = "InsertEnter",
+      config = function()
+        require("copilot").setup({})
+      end,
+    },
+    config = function ()
+      require("copilot_cmp").setup()
+    end
+  },
   -- Undotree for local revisioning
   {
     'mbbill/undotree',
@@ -130,6 +145,7 @@ local plugins = {
       local cmp = require('cmp')
       cmp.setup {
         sources = cmp.config.sources({
+          { name = "copilot" },
           { name = 'nvim_lsp' },
           { name = 'luasnip' },
         },{
