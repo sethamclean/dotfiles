@@ -31,6 +31,7 @@ vim.opt.updatecount = 50
 vim.opt.listchars = {
   eol = 'ꜜ',
   space = '·',
+  tab = '··',
   trail = '✚',
   extends = '▶',
   precedes = '◀',
