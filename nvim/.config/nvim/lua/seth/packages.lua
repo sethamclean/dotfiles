@@ -25,7 +25,16 @@ local plugins = {
       -- your configuration comes here
       -- or leave it empty to use the default settings
       -- refer to the configuration section below
-    }
+    },
+    config = function()
+      local which = require("which-key")
+      which.register({
+          l = { name = "Lspsaga" },
+          }, { prefix = "<leader>" })
+      which.register({
+          p = { name = "Telescope" },
+          }, { prefix = "<leader>" })
+    end,
   },
   -- Copilot setup
   {
@@ -46,7 +55,8 @@ local plugins = {
   {
     'mbbill/undotree',
     config = function()
-      vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle)
+      vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle,
+                      { desc='undotree toggle.'})
     end,
   },
   -- Add telescope fuzzy finder
@@ -187,7 +197,7 @@ local plugins = {
           { name = 'buffer' },
         }),
         mapping = cmp.mapping.preset.insert {
-          ['<tab>'] = cmp.mapping.confirm { select = true },
+          ['<CR>'] = cmp.mapping.confirm { select = true },
         },
         snippet = {
           expand = function(args)
