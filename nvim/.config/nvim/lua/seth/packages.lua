@@ -32,8 +32,34 @@ local plugins = {
           l = { name = "Lspsaga" },
           }, { prefix = "<leader>" })
       which.register({
-          p = { name = "Telescope" },
+          f = { name = "Telescope" },
           }, { prefix = "<leader>" })
+    end,
+  },
+  -- Debugger setup
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = {
+      "mfussenegger/nvim-dap",
+      "theHamsta/nvim-dap-virtual-text",
+      "folke/neodev.nvim",
+    },
+    config = function()
+      require("neodev").setup({
+        library = { plugins = { "nvim-dap-ui" }, types = true }})
+      require("nvim-dap-virtual-text").setup()
+      require("dapui").setup()
+    end,
+  },
+  {
+    "nvim-tree/nvim-tree.lua",
+    version = "*",
+    lazy = false,
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+    },
+    config = function()
+      require("nvim-tree").setup {}
     end,
   },
   -- Copilot setup
@@ -65,15 +91,18 @@ local plugins = {
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       local builtin = require('telescope.builtin')
-      vim.keymap.set('n', '<leader>pf', builtin.find_files,
+      vim.keymap.set('n', '<leader>ff', builtin.find_files,
                       { desc='telescope find files.'})
-      vim.keymap.set('n', '<leader>pg', builtin.git_files,
+      vim.keymap.set('n', '<leader>fg', builtin.git_files,
                       { desc='telescope find in git files.'})
-      vim.keymap.set('n', '<leader>ps',
+      vim.keymap.set('n', '<leader>fs',
                       function()
                         builtin.grep_string({ search = vim.fn.input("Grep > ") })
                       end,
                       { desc='telescope grep.'})
+      vim.keymap.set('n', '<leader>fb', builtin.buffers,
+                      { desc='telescope find in buffers.'})
+
     end,
   },
   {
@@ -86,6 +115,7 @@ local plugins = {
         vim.keymap.set(
           "n", "<leader>lf", '<cmd>Lspsaga finder<CR>')
         vim.keymap.set("n", "<leader>lo", '<cmd>Lspsaga outline<CR>')
+        vim.keymap.set("n", "<leader>la", '<cmd>Lspsaga code_action<CR>')
     end,
     dependencies = {
         'nvim-treesitter/nvim-treesitter',
