@@ -25,6 +25,7 @@ vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes:2"
 
+vim.opt.autoread = true
 vim.opt.updatecount = 50
 
 -- Draw whitespace and page width
