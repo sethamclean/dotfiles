@@ -126,6 +126,14 @@ if [ "$TERM_PROGRAM" = "vscode" ]; then
 fi
 
 #------------------------------------------------------------------------------
+# FZF
+#------------------------------------------------------------------------------
+source /usr/share/fzf/key-bindings.zsh
+source /usr/share/fzf/completion.zsh
+export FZF_DEFAULT_OPTS='--height 40% --layout=reverse --border'
+export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
+
+#------------------------------------------------------------------------------
 # Don't use codespaces GITHUB_TOKEN
 #------------------------------------------------------------------------------
 unset GITHUB_TOKEN
