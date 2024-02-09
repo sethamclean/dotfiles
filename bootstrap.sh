@@ -1,10 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
-setup_dotfiles(){
-    for package in */; do
-        stow --no-folding --target=${HOME} ${package}
-    done
-}
+dest=${XDG_CONFIG_HOME-$HOME/.config}
 
-setup_dotfiles
+flags=${1-}
+stow ${flags} --no-folding --target=${HOME} zshenv 
+stow ${flags} --no-folding --target=${dest} .config
+
