@@ -181,8 +181,28 @@ local plugins = {
               }
               require('mason-nvim-dap').default_setup(config) -- don't forget this!
           end,
+          delve = function(config)
+            config.adapters = {
+              type = "server",
+              port = "${port}",
+              executable = {
+                command = vim.fn.stdpath("data") .. '/mason/bin/dlv',
+                args = { "dap", "-l", "127.0.0.1:${port}" },
+              },
+            }
+              require('mason-nvim-dap').default_setup(config) -- don't forget this!
+          end,
         },
       })
+      local dap = require("dap")
+      dap.adapters.go = {
+        type = "server",
+        port = "${port}",
+        executable = {
+          command = vim.fn.stdpath("data") .. '/mason/bin/dlv',
+          args = { "dap", "-l", "127.0.0.1:${port}" },
+        },
+      }
       require("mason-lspconfig").setup{
         ensure_installed = {
           -- "clangd",
