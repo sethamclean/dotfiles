@@ -1,0 +1,79 @@
+# Ignore compiled binaries and build artifacts
+*.exe
+*.o
+*.out
+*.so
+*.dll
+*.class
+*.jar
+*.war
+*.egg-info
+__pycache__/
+target/
+dist/
+build/
+bin/
+node_modules/
+
+# Ignore version control directories
+.git/
+.hg/
+.svn/
+CVS/
+
+# Ignore editor temporary files
+*.swp
+*.swo
+*.swn
+*.swo
+*.un~
+*.bak
+*.orig
+*.rej
+*.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.backup
+*.tfstate.tmp
+*.terraform/
+
+# Ignore Go build artifacts
+*.a
+*.test
+*.test.go
+
+# Ignore Rust build artifacts
+Cargo.lock
+target/
+
+# Ignore C/C++ build artifacts
+*.obj
+*.pch
+*.pdb
+*.ilk
+*.suo
+*.idb
+*.manifest
+*.ipch
+*.tlog
+*.lastbuildstate
+*.sdf
+*.opensdf
+*.sln.docstates
+*.VC.db
+*.VC.VC.opendb
+
+# Ignore specific folders
+.codespaces/
+.local/
+.zinit/
+.cache/
+.npm/
+pkg/
+
+# Don't Ignore
+!dotfiles/
