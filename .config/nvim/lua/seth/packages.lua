@@ -160,7 +160,7 @@ local plugins = {
     config = function()
       require("mason").setup()
       require("mason-nvim-dap").setup({
-      ensure_installed = {'delve', 'python'},
+      ensure_installed = {'delve', 'python', 'codelldb'},
       automatic_installation = true,
       handlers = {
           function(config)
@@ -200,6 +200,31 @@ local plugins = {
         executable = {
           command = vim.fn.stdpath("data") .. '/mason/bin/dlv',
           args = { "dap", "-l", "127.0.0.1:${port}" },
+        },
+      }
+       dap.configurations.rust = {
+         {
+          name = "LLDB: Launch",
+          type = "codelldb",
+          request = "launch",
+          program = function()
+            local output = vim.fn.systemlist("cargo build -q --message-format=json 2>1")
+            for _, l in ipairs(output) do
+              local json = vim.json.decode(l)
+              if json == nil then
+                error("error parsing json")
+              end
+              if json.success == false then
+                return error("error building package")
+              end
+              if json.executable ~= nil then
+                return json.executable
+              end
+            end
+          end,
+          cwd = "${workspaceFolder}",
+          stopOnEntry = false,
+          args = {},
         },
       }
       require("mason-lspconfig").setup{
