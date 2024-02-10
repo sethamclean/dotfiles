@@ -1,69 +1,4 @@
--- Bootstrap lazy.nvim package manager
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", -- latest stable release
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
-
-local plugins = {
-  -- Key cheat sheet
-  {
-    "folke/which-key.nvim",
-    event = "VeryLazy",
-    init = function()
-      vim.o.timeout = true
-      vim.o.timeoutlen = 300
-    end,
-    opts = {
-      -- your configuration comes here
-      -- or leave it empty to use the default settings
-      -- refer to the configuration section below
-    },
-    config = function()
-      local which = require("which-key")
-      which.register({
-          l = { name = "Lspsaga" },
-          }, { prefix = "<leader>" })
-      which.register({
-          f = { name = "Telescope" },
-          }, { prefix = "<leader>" })
-    end,
-  },
-  -- Debugger setup
-  {
-    "rcarriga/nvim-dap-ui",
-    dependencies = {
-      "mfussenegger/nvim-dap",
-      "theHamsta/nvim-dap-virtual-text",
-      "folke/neodev.nvim",
-    },
-    config = function()
-      require("neodev").setup({
-        library = { plugins = { "nvim-dap-ui" }, types = true }})
-      require("nvim-dap-virtual-text").setup({})
-      require("dapui").setup()
-      local dap, dapui = require("dap"), require("dapui")
-      dap.listeners.before.attach.dapui_config = function()
-        dapui.open()
-      end
-      dap.listeners.before.launch.dapui_config = function()
-        dapui.open()
-      end
-      dap.listeners.before.event_terminated.dapui_config = function()
-        dapui.close()
-      end
-      dap.listeners.before.event_exited.dapui_config = function()
-        dapui.close()
-      end
-    end,
-  },
+return  {
   {
     "nvim-tree/nvim-tree.lua",
     version = "*",
@@ -138,17 +73,7 @@ local plugins = {
      dependencies = { "nvim-tree/nvim-web-devicons" },
      opts = {}
   },
-  {
-    "ellisonleao/gruvbox.nvim",
-    lazy = false,
-    priority = 1000,
-    config = function()
-      vim.cmd.colorscheme("gruvbox")
-      vim.api.nvim_set_hl(0, 'Normal', { fg = "#ffffff", bg = "#101010" })
-      vim.api.nvim_set_hl(0, 'SignColumn', { fg = "#ffffff", bg = "#101010" })
-    end,
-  },
-  -- Configure and install LSP servers and debuggers using these plugins
+    -- Configure and install LSP servers and debuggers using these plugins
   {
     "neovim/nvim-lspconfig",
     dependencies = {
@@ -172,8 +97,9 @@ local plugins = {
           python = function(config)
               config.adapters = {
                 type = "executable",
-                command = "/usr/bin/python3",
+                command = "/usr/bin/env",
                 args = {
+                  "python3",
                   "-m",
                   "debugpy.adapter",
                 },
@@ -371,6 +297,3 @@ local plugins = {
     end
   },
 }
-
--- Kick off package install
-require("lazy").setup(plugins)

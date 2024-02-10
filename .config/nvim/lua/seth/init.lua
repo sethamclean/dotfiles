@@ -1,5 +1,5 @@
 require("seth.remap")
-require("seth.packages")
+require("seth.lazy")
 
 -- Tab settings
 vim.opt.expandtab = true
