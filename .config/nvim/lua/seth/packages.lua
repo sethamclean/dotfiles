@@ -107,11 +107,8 @@ local plugins = {
       vim.keymap.set('n', '<leader>ff', builtin.find_files,
                       { desc='telescope find files.'})
       vim.keymap.set('n', '<leader>fg', builtin.git_files,
-                      { desc='telescope find in git files.'})
-      vim.keymap.set('n', '<leader>fs',
-                      function()
-                        builtin.grep_string({ search = vim.fn.input("Grep > ") })
-                      end,
+                      { desc='telescope find git files.'})
+      vim.keymap.set('n', '<leader>fs', builtin.live_grep,
                       { desc='telescope grep.'})
       vim.keymap.set('n', '<leader>fb', builtin.buffers,
                       { desc='telescope find in buffers.'})
@@ -147,6 +144,8 @@ local plugins = {
     priority = 1000,
     config = function()
       vim.cmd.colorscheme("gruvbox")
+      vim.api.nvim_set_hl(0, 'Normal', { fg = "#ffffff", bg = "#101010" })
+      vim.api.nvim_set_hl(0, 'SignColumn', { fg = "#ffffff", bg = "#101010" })
     end,
   },
   -- Configure and install LSP servers and debuggers using these plugins
