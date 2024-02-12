@@ -133,7 +133,7 @@ source /usr/share/fzf/completion.zsh
 export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
 export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path /workspaces --search-path /root --search-path $PWD"
-export FZF_ALT_C_OPTS="--preview 'tree -C {}'"
+export FZF_ALT_C_OPTS="--preview 'fd -H -L . {} | tree -a --fromfile -C'"
 export FZF_CTRL_T_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_CTRL_T_OPTS="
   --preview 'bat -n --color=always {}'
@@ -143,3 +143,8 @@ export FZF_CTRL_T_OPTS="
 # Don't use codespaces GITHUB_TOKEN
 #------------------------------------------------------------------------------
 unset GITHUB_TOKEN
+
+#------------------------------------------------------------------------------
+# Auto start tmux
+#------------------------------------------------------------------------------
+if [ "$TMUX" = "" ]; then tmux new-session -A -s main; fi
