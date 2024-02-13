@@ -39,5 +39,12 @@ return {
 				additional_vim_regex_highlighting = false,
 			},
 		})
+		vim.opt.foldmethod = "expr"
+		vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+		vim.api.nvim_create_autocmd({ "BufEnter", "FileReadPost" }, {
+			callback = function()
+				vim.cmd("normal zR")
+			end,
+		})
 	end,
 }
