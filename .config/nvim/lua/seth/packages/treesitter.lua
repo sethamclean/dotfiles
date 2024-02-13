@@ -15,6 +15,7 @@ return {
 				"markdown_inline",
 				"yaml",
 				"terraform",
+				"hcl",
 				"json",
 				"javascript",
 				"typescript",
