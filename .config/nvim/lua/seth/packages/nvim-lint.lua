@@ -5,6 +5,8 @@ return {
 			python = { "mypy", "pylint", "flake8" },
 			sh = { "shellcheck" },
 			go = { "golangcilint" },
+			terraform = { "terraform_validate" },
+			tf = { "terraform_validate" },
 		}
 		vim.api.nvim_create_autocmd({ "BufWritePost" }, {
 			callback = function()

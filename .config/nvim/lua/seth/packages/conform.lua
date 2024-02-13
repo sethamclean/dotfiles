@@ -15,6 +15,9 @@ return {
 				yaml = { "prettier" },
 				xml = { "prettier" },
 				markdown = { "prettier" },
+				terraform = { "terraform_fmt" },
+				tf = { "terraform_fmt" },
+				["terraform-vars"] = { "terraform_fmt" },
 			},
 			format_on_save = {
 				-- These options will be passed to conform.format()
