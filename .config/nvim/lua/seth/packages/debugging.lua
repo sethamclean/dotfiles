@@ -4,6 +4,7 @@ return {
 		"mfussenegger/nvim-dap",
 		config = function()
 			local dap = require("dap")
+			---@diagnostic disable-next-line: undefined-field
 			dap.adapters.go = {
 				type = "server",
 				port = "${port}",
@@ -12,6 +13,7 @@ return {
 					args = { "dap", "-l", "127.0.0.1:${port}" },
 				},
 			}
+			---@diagnostic disable-next-line: undefined-field
 			dap.configurations.rust = {
 				{
 					name = "LLDB: Launch",
@@ -66,15 +68,19 @@ return {
 		config = function()
 			require("dapui").setup()
 			local dap, dapui = require("dap"), require("dapui")
+			---@diagnostic disable-next-line: undefined-field
 			dap.listeners.before.attach.dapui_config = function()
 				dapui.open()
 			end
+			---@diagnostic disable-next-line: undefined-field
 			dap.listeners.before.launch.dapui_config = function()
 				dapui.open()
 			end
+			---@diagnostic disable-next-line: undefined-field
 			dap.listeners.before.event_terminated.dapui_config = function()
 				dapui.close()
 			end
+			---@diagnostic disable-next-line: undefined-field
 			dap.listeners.before.event_exited.dapui_config = function()
 				dapui.close()
 			end
