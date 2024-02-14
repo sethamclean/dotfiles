@@ -5,7 +5,7 @@ return {
 	},
 	config = function()
 		require("lualine").setup({
-			options = { theme = "gruvbox" },
+			options = { theme = "dracula" },
 		})
 	end,
 }

@@ -22,6 +22,7 @@ return {
 			adapters = {
 				require("neotest-go"),
 			},
+			log_level = vim.log.levels.DEBUG,
 		})
 	end,
 }
