@@ -5,8 +5,9 @@ return {
 		require("conform").setup({
 			formatters_by_ft = {
 				lua = { "stylua" },
+				sh = { "shfmt" },
 				python = { "ruff_format" },
-				go = { "gofmt" },
+				-- go = { "gofmt" }, use gofumpt via gopls configuration
 				rust = { "cargo fmt" },
 				javascript = { "prettier" },
 				css = { "prettier" },
