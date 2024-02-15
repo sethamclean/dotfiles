@@ -18,6 +18,8 @@ autoload -Uz _zinit
 #------------------------------------------------------------------------------
 zinit ice depth=1; zinit light spaceship-prompt/spaceship-prompt
 zinit light zsh-users/zsh-autosuggestions
+zinit light dracula/zsh
+zinit light Aloxaf/fzf-tab
 
 #------------------------------------------------------------------------------
 # zsh cd path

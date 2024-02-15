@@ -42,7 +42,7 @@ return {
 		})
 		vim.opt.foldmethod = "expr"
 		vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
-		vim.api.nvim_create_autocmd({ "BufEnter", "FileReadPost" }, {
+		vim.api.nvim_create_autocmd({ "BufEnter", "BufReadPost", "FileReadPost" }, {
 			callback = function()
 				vim.cmd("normal zR")
 			end,
