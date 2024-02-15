@@ -21,11 +21,11 @@ if [[ -z "$LOG_GROUP" ]]; then
 fi
 
 LOG_STREAM=$(aws logs describe-log-streams --log-group-name "${LOG_GROUP}" |
-	jq -r '.logStreams | .[] | .logStreamName' | fzf)
+	jq -r '.logStreams | .[] | "\(.creationTime |= (./1000 | round | todateiso8601) |.creationTime ) \(.logStreamName)"' | fzf | awk '{print $2}')
 
 if [[ -z "$LOG_STREAM" ]]; then
 	echo "No log stream selected." >&2
 fi
 
 aws logs get-log-events --log-group-name "${LOG_GROUP}" --log-stream-name "${LOG_STREAM}" |
-	jq -r '.events | .[] | {timestamp, message} | "\(.timestamp): \(.message)"' | grep -v '^$' | less
+	jq -r '.events | .[] | {timestamp, message} | "\(.timestamp |= (./1000 | round | todateiso8601) |.timestamp): \(.message)"' | grep -v '^$' | less
