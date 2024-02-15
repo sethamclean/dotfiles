@@ -28,4 +28,4 @@ if [[ -z "$LOG_STREAM" ]]; then
 fi
 
 aws logs get-log-events --log-group-name "${LOG_GROUP}" --log-stream-name "${LOG_STREAM}" |
-	jq -r '.events | .[] | {timestamp, message} | "\(.timestamp): \(.message)"' | less
+	jq -r '.events | .[] | {timestamp, message} | "\(.timestamp): \(.message)"' | grep -v '^$' | less
