@@ -1,0 +1,27 @@
+#!/bin/bash
+set -eou pipefail
+
+usage () {
+  echo "Usage: s3 [ls|get]"
+  exit 1
+}
+
+if [ "$1" = "--help" ]; then
+  usage
+fi
+
+list () {
+    bucket=$(aws s3api list-buckets --query "Buckets[].[Name]" --output text | fzf)
+    aws s3api list-objects --bucket $bucket --query "Contents[].[LastModified, Key, Size]" --output text
+}
+
+if [ "$1" = "ls" ]; then
+  list
+fi
+
+if [ "$1" = "get" ]; then
+  key=$(list | sort | fzf | awk '{print $2}')
+  aws s3api get-object --bucket $bucket --key $key $(basename $key)
+fi
+
+

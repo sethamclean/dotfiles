@@ -1,0 +1,2 @@
+#!/bin/bash
+procs | fzf --color | awk '{print $1}' | xargs kill $1
