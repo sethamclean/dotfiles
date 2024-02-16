@@ -22,15 +22,6 @@ zinit light dracula/zsh
 zinit light Aloxaf/fzf-tab
 
 #------------------------------------------------------------------------------
-# zsh cd path
-#------------------------------------------------------------------------------
-setopt auto_cd
-cdpath=($HOME /workspaces .. ../..)
-autoload -U compinit 
-compinit
-
-
-#------------------------------------------------------------------------------
 # Theme settings
 #------------------------------------------------------------------------------
 export SPACESHIP_VI_MODE_SHOW="0"
@@ -161,9 +152,22 @@ if [ "$TMUX" = "" ]; then tmux new-session -A -s main; fi
 #------------------------------------------------------------------------------
 #`Zoxide`settings
 #------------------------------------------------------------------------------
-eval "$(zoxide init zsh)"
-alias cd='z'
+if [ -x "$(which zoxide)" ];
+then
+    function cd () {
+      __zoxide_z $@
+    }
+    eval "$(zoxide init zsh)"
+fi
 export _ZO_FZF_OPTS="--preview 'exa -Tlo --time-style=iso --no-filesize --no-permissions --icons=always --color=always {2..}'"
+
+#------------------------------------------------------------------------------
+# zsh cd path
+#------------------------------------------------------------------------------
+setopt auto_cd
+cdpath=($HOME /workspaces .. ../..)
+autoload -U compinit 
+compinit
 
 #------------------------------------------------------------------------------
 # Bat
