@@ -121,8 +121,12 @@ fi
 #------------------------------------------------------------------------------
 # FZF
 #------------------------------------------------------------------------------
-source /usr/share/fzf/key-bindings.zsh
-source /usr/share/fzf/completion.zsh
+fzf_completions_path=/usr/share/fzf
+if [ -d "$HOME/.nix-profile/share/fzf" ]; then
+	fzf_completions_path=$HOME/.nix-profile/share/fzf
+fi
+source ${fzf_completions_path}/key-bindings.zsh
+source ${fzf_completions_path}/completion.zsh
 export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
 export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path /workspaces --search-path /root --search-path $PWD"
