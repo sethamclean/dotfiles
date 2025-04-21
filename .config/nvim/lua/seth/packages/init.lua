@@ -104,6 +104,10 @@ return {
 		version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
 		opts = {
 			-- add any opts here
+			behaviour = {
+				enable_claude_text_editor_tool_mode = true,
+				use_cwd_as_project_root = true,
+			},
 			provider = "copilot",
 			copilot = {
 				model = "claude-3.7-sonnet",
