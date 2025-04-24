@@ -20,6 +20,13 @@ zinit ice depth=1; zinit light spaceship-prompt/spaceship-prompt
 zinit light zsh-users/zsh-autosuggestions
 zinit light dracula/zsh
 zinit light Aloxaf/fzf-tab
+zinit light loiccoyle/zsh-github-copilot
+
+#------------------------------------------------------------------------------
+# ZSH copilot settings
+#------------------------------------------------------------------------------
+bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
+bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
 
 #------------------------------------------------------------------------------
 # Theme settings
@@ -188,3 +195,12 @@ autoload -Uz compinit && compinit
 # AWS autocomplete
 #------------------------------------------------------------------------------
 complete -C '/usr/sbin/aws_completer' aws
+
+
+#------------------------------------------------------------------------------
+# Bindings reminder
+#------------------------------------------------------------------------------
+alias bindings="echo -e \"\033[1;34mKeyboard Shortcuts:\033[0m\n\
+\033[1;33mCTRL+T\033[0m : FZF search for files in current directory\n\
+\033[1;33mALT+C\033[0m  : FZF search and CD into subdirectory\n\
+\033[1;33mCTRL+R\033[0m : FZF search through shell history\""
