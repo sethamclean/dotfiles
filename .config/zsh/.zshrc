@@ -216,4 +216,7 @@ complete -C '/usr/sbin/aws_completer' aws
 alias bindings="echo -e \"\033[1;34mKeyboard Shortcuts:\033[0m\n\
 \033[1;33mCTRL+T\033[0m : FZF search for files in current directory\n\
 \033[1;33mALT+C\033[0m  : FZF search and CD into subdirectory\n\
-\033[1;33mCTRL+R\033[0m : FZF search through shell history\""
+\033[1;33mCTRL+R\033[0m : FZF search through shell history\n\
+\033[1;33mALT+\\ \033[0m : GitHub Copilot suggest\n\
+\033[1;33mALT+SHIFT+\\ \033[0m : GitHub Copilot explain\""
+
