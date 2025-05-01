@@ -16,5 +16,8 @@ return {
 				},
 			},
 		})
+		
+		-- Initialize native MCP servers after setup
+		require("seth.mcp").setup()
 	end,
 }

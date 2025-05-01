@@ -36,7 +36,7 @@
     },
     "searxng": {
       "command": "docker",
-      "disabled": false,
+      "disabled": true,
       "name": "searxng",
       "env": {
         "SEARXNG_URL": "http://host.docker.internal:8080"
