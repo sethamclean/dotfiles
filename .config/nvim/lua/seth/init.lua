@@ -2,7 +2,8 @@ require("seth.remap")
 require("seth.lazy")
 
 -- rendering
-vim.opt_local.conceallevel = 2
+vim.opt.conceallevel = 2
+vim.opt.laststatus = 3
 
 -- Tab settings
 vim.opt.expandtab = true
