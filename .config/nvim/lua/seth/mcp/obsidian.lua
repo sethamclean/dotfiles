@@ -547,39 +547,30 @@ M.server = {
 				description = "Get current Obsidian.nvim status",
 				uri = "obsidian://status",
 				handler = function(_, res)
-					-- Try to access the obsidian module to check its status
-					-- Use a more reliable approach that doesn't depend on internal API
+					-- Check if Obsidian.nvim commands are available
+					local cmd_exists = vim.fn.exists(":ObsidianOpen") > 0
+
 					local status_text = "Obsidian.nvim Status:\n\n"
 
-					-- Check if we're in an Obsidian buffer
-					local in_obsidian_buffer = false
-					local _, is_md = pcall(function()
-						return vim.bo.filetype == "markdown"
+					if not cmd_exists then
+						status_text = status_text .. "❌ Obsidian.nvim commands are not available.\n"
+						status_text = status_text
+							.. "Please ensure that Obsidian.nvim is installed and properly configured."
+						return res:text(status_text):send()
+					end
+
+					status_text = status_text .. "✅ Obsidian.nvim is installed and commands are available.\n\n"
+
+					-- Try to get workspace info
+					local workspace_ok, workspace_result = pcall(function()
+						local output = vim.api.nvim_exec2("ObsidianWorkspace", { output = true })
+						return output.output
 					end)
 
-					if is_md then
-						local filename = vim.fn.expand("%:p")
-						if filename and filename ~= "" then
-							-- Try to execute ObsidianOpen without arguments - succeeds only in Obsidian notes
-							local open_ok, _ = pcall(vim.cmd, "ObsidianOpen")
-							in_obsidian_buffer = open_ok
-						end
-					end
-
-					if not in_obsidian_buffer then
-						status_text = status_text .. "Not currently in an Obsidian note.\n"
+					if workspace_ok and workspace_result and workspace_result ~= "" then
+						status_text = status_text .. "Workspace information:\n" .. workspace_result
 					else
-						status_text = status_text .. "Currently in an Obsidian note.\n"
-					end
-
-					-- Try to get current workspace info by running a command
-					local ok, _ = pcall(vim.cmd, "ObsidianWorkspace")
-					if not ok then
-						status_text = status_text .. "Unable to retrieve workspace information.\n"
-						status_text = status_text .. "Obsidian.nvim is installed but may not be properly configured."
-					else
-						status_text = status_text .. "Obsidian.nvim is active and configured.\n"
-						status_text = status_text .. "Use ObsidianWorkspace command to view or switch workspaces."
+						status_text = status_text .. "Unable to retrieve workspace information."
 					end
 
 					return res:text(status_text):send()

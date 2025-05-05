@@ -1,6 +1,5 @@
 return {
 	"yetone/avante.nvim",
-	event = "VeryLazy",
 	lazy = false,
 	version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
 	opts = {
@@ -11,7 +10,11 @@ return {
 		},
 		provider = "copilot",
 		copilot = {
+			endpoint = "https://api.githubcopilot.com",
 			model = "claude-3.7-sonnet",
+			max_tokens = 20480,
+			temperature = 0,
+			timeout = 30000,
 		},
 		-- The system_prompt type supports both a string and a function that returns a string
 		-- Using a function here allows dynamically updating the prompt with mcphub
