@@ -1,8 +1,14 @@
 {
-  "nativeMCPServers": [],
+  "nativeMCPServers": {
+    "obsidian": {
+      "disabled": false
+    },
+    "neovim": {
+      "disabled": false
+    }
+  },
   "mcpServers": {
     "github": {
-      "command": "docker",
       "disabled_tools": [
         "add_issue_comment",
         "add_pull_request_review_comment",
@@ -19,7 +25,6 @@
         "update_pull_request",
         "update_pull_request_branch"
       ],
-      "disabled": false,
       "args": [
         "run",
         "-i",
@@ -30,17 +35,13 @@
         "GITHUB_PERSONAL_ACCESS_TOKEN",
         "ghcr.io/github/github-mcp-server"
       ],
+      "disabled": false,
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "${MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
+      },
+      "command": "docker"
     },
     "searxng": {
-      "command": "docker",
-      "disabled": true,
-      "name": "searxng",
-      "env": {
-        "SEARXNG_URL": "http://host.docker.internal:8080"
-      },
       "args": [
         "run",
         "-i",
@@ -55,7 +56,13 @@
         "npx",
         "-y",
         "mcp-searxng@0.4.6"
-      ]
+      ],
+      "name": "searxng",
+      "env": {
+        "SEARXNG_URL": "http://host.docker.internal:8080"
+      },
+      "disabled": true,
+      "command": "docker"
     }
   }
 }
