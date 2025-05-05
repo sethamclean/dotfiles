@@ -81,8 +81,10 @@ function M.setup()
 		end
 
 		-- Check if _G.MCP_SERVERS exists
-		if type(_G.MCP_SERVERS) == "table" then
+		---@diagnostic disable-next-line: undefined-field
+		if _G.MCP_SERVERS then
 			local registered = {}
+			---@diagnostic disable-next-line: undefined-field
 			for name, _ in pairs(_G.MCP_SERVERS) do
 				table.insert(registered, name)
 			end

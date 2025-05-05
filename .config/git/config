@@ -1,44 +1,58 @@
 [user]
-    name = Seth McLean
-    email = seth-mclean@idexx.com
+	name = Seth McLean
+	email = seth-mclean@idexx.com
 
 [alias]
-    tree = log --oneline --graph --color --all --decorate
+	tree = log --oneline --graph --color --all --decorate
 	d = difftool
+	status-report = !git --no-pager diff --stat && git --no-pager status -s
 
 [core]
-  editor = nvim
+	editor = nvim
 	excludesfile = ~/.gitignore
 
 [push]
-    default = simple
+	default = simple
 	followTags = true
+	autoSetupRemote = true
 
 [merge]
 	tool = vimdiff3
+
 [mergetool]
 	path = nvim
+
 [mergetool "vimdiff"]
 	path = nvim
+
 [mergetool "vimdiff3"]
 	path = nvim
+
 [diff]
 	tool = vimdiff3
+
 [difftool]
 	prompt = false
+
 [rerere]
 	enabled = 1
+
 [rebase]
 	instructionFormat = (%an <%ae>) %s
+
 [url "org-59374259@github.com:idexx-is/"]
-    insteadOf = "is:"
+	insteadOf = "is:"
+
 [credential "https://github.com"]
 	helper = 
 	helper = !gh auth git-credential
+
 [credential "https://gist.github.com"]
 	helper = 
 	helper = !gh auth git-credential
+
 [column]
 	ui = auto
+
 [branch]
 	sort = -committerdate

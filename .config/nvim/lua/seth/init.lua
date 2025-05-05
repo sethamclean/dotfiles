@@ -1,6 +1,9 @@
 require("seth.remap")
 require("seth.lazy")
 
+-- rendering
+vim.opt_local.conceallevel = 2
+
 -- Tab settings
 vim.opt.expandtab = true
 vim.opt.tabstop = 2
@@ -30,12 +33,12 @@ vim.opt.updatecount = 50
 
 -- Draw whitespace and page width
 vim.opt.listchars = {
-  eol = 'ꜜ',
-  space = '·',
-  tab = '··',
-  trail = '✚',
-  extends = '▶',
-  precedes = '◀',
+	eol = "ꜜ",
+	space = "·",
+	tab = "··",
+	trail = "✚",
+	extends = "▶",
+	precedes = "◀",
 }
 vim.opt.list = true
 vim.opt.colorcolumn = "80"
