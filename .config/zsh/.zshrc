@@ -215,12 +215,28 @@ complete -C '/usr/sbin/aws_completer' aws
 export SEARXNG_API_URL="http://localhost:8080/search"
 
 #------------------------------------------------------------------------------
-# Bindings reminder
+# Quick Reference Documentation
 #------------------------------------------------------------------------------
-alias bindings="echo -e \"\033[1;34mKeyboard Shortcuts:\033[0m\n\
-\033[1;33mCTRL+T\033[0m : FZF search for files in current directory\n\
-\033[1;33mALT+C\033[0m  : FZF search and CD into subdirectory\n\
-\033[1;33mCTRL+R\033[0m : FZF search through shell history\n\
-\033[1;33mALT+\\ \033[0m : GitHub Copilot suggest\n\
-\033[1;33mALT+SHIFT+\\ \033[0m : GitHub Copilot explain\""
-
+quickref() {
+  local query=$1
+  local ref_dir=~/Documents/obsidian-vault/main/quick-ref
+  
+  if [[ -d "$ref_dir" ]]; then
+    if [[ -z "$query" ]]; then
+      # If no argument is provided, show all files with fzf
+      local selected_file=$(find "$ref_dir" -type f | fzf --preview 'bat -n --color=always {}')
+      [[ -n "$selected_file" ]] && bat --paging=always "$selected_file"
+    else
+      # If argument is provided, use it as search term for fzf
+      local selected_file=$(find "$ref_dir" -type f | fzf -q "$query" -1 --preview 'bat -n --color=always {}')
+      if [[ -n "$selected_file" ]]; then
+        bat --paging=always "$selected_file"
+      else
+        echo "No matching reference file found for: $query"
+      fi
+    fi
+  else
+    echo "Reference directory not found: $ref_dir"
+    echo "Please create it and add your reference files."
+  fi
+}

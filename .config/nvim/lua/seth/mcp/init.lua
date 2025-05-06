@@ -17,7 +17,7 @@ end
 M.server_modules = {
 	github_actions = "seth.mcp.github_actions",
 	terraform_cloud = "seth.mcp.terraform_cloud",
-	obsidian = "seth.mcp.obsidian",
+	knowledge_base = "seth.mcp.knowledge_base",
 	-- Add new server modules here
 }
 
