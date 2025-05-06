@@ -1,7 +1,8 @@
 return {
 	"yetone/avante.nvim",
 	lazy = false,
-	version = false, -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
+	commit = "f9aa754", -- https://github.com/yetone/avante.nvim/issues/1943
+	-- version = -- Set this to "*" to always pull the latest release version, or set it to false to update to the latest code changes.
 	opts = {
 		-- add any opts here
 		behaviour = {
@@ -12,7 +13,7 @@ return {
 		copilot = {
 			endpoint = "https://api.githubcopilot.com",
 			model = "claude-3.7-sonnet",
-			max_tokens = 20480,
+			max_tokens = 90000,
 			temperature = 0,
 			timeout = 30000,
 		},
