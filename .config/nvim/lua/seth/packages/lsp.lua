@@ -24,7 +24,7 @@ return {
 					"kotlin_language_server",
 					"jsonls",
 					"ts_ls",
-					-- "remark_ls",
+					"remark_ls",
 					"taplo",
 					"terraformls",
 					"lemminx",
@@ -37,6 +37,36 @@ return {
 				-- a dedicated handler.
 				function(server_name) -- default handler (optional)
 					require("lspconfig")[server_name].setup({})
+				end,
+				["remark_ls"] = function()
+					local lspconfig = require("lspconfig")
+					local configs = require("lspconfig.configs")
+
+					if not configs.remark_ls then
+						configs.remark_ls = {
+							default_config = {
+								cmd = { "remark-language-server", "--stdio" },
+								filetypes = { "markdown" },
+								root_dir = lspconfig.util.root_pattern(
+									".git",
+									".markdownlint.json",
+									".markdownlint.yaml",
+									".markdownlint.yml",
+									".remarkrc",
+									"package.json"
+								),
+								single_file_support = true,
+							},
+						}
+					end
+
+					lspconfig.remark_ls.setup({
+						settings = {
+							remark = {
+								requireConfig = false,
+							},
+						},
+					})
 				end,
 				["lua_ls"] = function()
 					require("lspconfig").lua_ls.setup({
@@ -57,6 +87,13 @@ return {
 								telemetry = {
 									enable = false,
 								},
+								format = {
+									enable = true,
+									defaultConfig = {
+										indent_style = "tab",
+										indent_size = "4",
+									},
+								},
 							},
 						},
 					})
@@ -65,6 +102,7 @@ return {
 					require("lspconfig").gopls.setup({
 						settings = {
 							gopls = {
+								buildFLags = { "-tags=integration" },
 								gofumpt = true,
 							},
 						},

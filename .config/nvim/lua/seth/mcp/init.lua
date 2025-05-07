@@ -18,6 +18,7 @@ M.server_modules = {
 	github_actions = "seth.mcp.github_actions",
 	terraform_cloud = "seth.mcp.terraform_cloud",
 	knowledge_base = "seth.mcp.knowledge_base",
+	code2prompt = "seth.mcp.code2prompt",
 	-- Add new server modules here
 }
 
