@@ -142,7 +142,7 @@ export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
 export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_ALT_C_OPTS="--preview 'fd -H -L . {} | exa -Tlo --git-ignore --time-style=iso --no-filesize --no-permissions --icons=always --color=always --stdin'"
-export FZF_CTRL_T_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
+export FZF_CTRL_T_COMMAND="fd -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_CTRL_T_OPTS="
   --preview 'bat -n --color=always {}'
   --bind 'ctrl-/:change-preview-window(down|hidden|)'"
