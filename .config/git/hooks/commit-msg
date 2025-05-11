@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Get the commit message from the file passed as argument
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Regular expression for conventional commit format
+# Format: type(scope?): description
+#   - type: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test
+#   - scope: optional, in parentheses
+#   - description: required
+CONVENTIONAL_COMMIT_REGEX='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9-]+\))?: .+'
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Save the commit message to a temporary file for reuse
+SAVED_MSG_FILE=$(git rev-parse --git-dir)/COMMIT_EDITMSG.save
+
+# Check if the first line of commit matches conventional commit format
+FIRST_LINE=$(echo "$COMMIT_MSG" | head -n 1)
+if ! echo "$FIRST_LINE" | grep -qE "$CONVENTIONAL_COMMIT_REGEX"; then
+  # Save the current commit message
+  echo "$COMMIT_MSG" >"$SAVED_MSG_FILE"
+
+  echo -e "${RED}Error: Commit message does not follow Conventional Commits format${NC}"
+  echo -e "${YELLOW}Format: type(scope?): description${NC}"
+  echo -e "${YELLOW}Valid types: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test${NC}"
+  echo -e "${YELLOW}Examples:${NC}"
+  echo "  feat: add new feature"
+  echo "  fix(auth): handle login timeout"
+  echo "  docs(readme): update installation steps"
+  echo -e "\n${YELLOW}Your commit message has been saved.${NC}"
+
+  # Create a marker file to indicate retry is desired
+  read -p "Would you like to try again? (y/N) " choice
+  if [[ "$choice" =~ ^[Yy]$ ]]; then
+    # Create a retry marker
+    touch "$(git rev-parse --git-dir)/COMMIT_RETRY"
+    echo -e "\n${YELLOW}Retrying commit...${NC}"
+    exit 1
+  else
+    echo -e "\nTo try again later with your saved message:"
+    echo -e "  ${YELLOW}git commit --template=\"$SAVED_MSG_FILE\"${NC}"
+    exit 1
+  fi
+fi
+
+# Success - clean up saved message if it exists
+if [ -f "$SAVED_MSG_FILE" ]; then
+  rm "$SAVED_MSG_FILE"
+fi
+
+echo -e "${GREEN}Commit message follows Conventional Commits format${NC}"
+exit 0
