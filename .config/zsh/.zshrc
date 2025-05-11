@@ -16,11 +16,17 @@ autoload -Uz _zinit
 #------------------------------------------------------------------------------
 # zsh plugins via zinit
 #------------------------------------------------------------------------------
+# Load prompt immediately
 zinit ice depth=1; zinit light spaceship-prompt/spaceship-prompt
-zinit light zsh-users/zsh-autosuggestions
-zinit light dracula/zsh
-zinit light Aloxaf/fzf-tab
-zinit light loiccoyle/zsh-github-copilot
+
+# Turbo mode - load plugins after shell startup
+zinit wait lucid light-mode for \
+  atinit"ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20" \
+  atload"_zsh_autosuggest_start" \
+  zsh-users/zsh-autosuggestions \
+  dracula/zsh \
+  Aloxaf/fzf-tab \
+  loiccoyle/zsh-github-copilot
 
 #------------------------------------------------------------------------------
 # ZSH copilot settings
@@ -66,19 +72,9 @@ export EDITOR=nvim
 export VISUAL=nvim
 
 #------------------------------------------------------------------------------
-# Pyenv
+# uv - Python package installer and environment management
 #------------------------------------------------------------------------------
-if [ -z $POETRY_ACTIVE ]; then
-    export PYENV_ROOT="$HOME/.pyenv"
-    export PATH="$PYENV_ROOT/bin:$PATH"
-    if command -v pyenv 1>/dev/null 2>&1; then
-      eval "$(pyenv init -)"
-    fi
-fi
-
-pyinstall(){
- PYTHON_CONFIGURE_OPTS='--enable-shared' LDFLAGS="-Wl,-rpath=$HOME/.pyenv/versions/$1/lib" pyenv install $1
-}
+export UV_CACHE_DIR="$HOME/.cache/uv"
 
 #------------------------------------------------------------------------------
 # Node path
@@ -199,15 +195,20 @@ compinit
 alias cat='bat'
 
 #------------------------------------------------------------------------------
-# Auto completion
+# Optimize compinit and completion loading
 #------------------------------------------------------------------------------
-autoload bashcompinit && bashcompinit
-autoload -Uz compinit && compinit
+# Only check for new completions once a day
+if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C
+fi
 
-#------------------------------------------------------------------------------
-# AWS autocomplete
-#------------------------------------------------------------------------------
-complete -C '/usr/sbin/aws_completer' aws
+# Load bashcompinit only if needed (for AWS completion)
+if [[ -x /usr/sbin/aws_completer ]]; then
+  autoload bashcompinit && bashcompinit
+  complete -C '/usr/sbin/aws_completer' aws
+fi
 
 #------------------------------------------------------------------------------
 # Searxng config

@@ -1,0 +1,15 @@
+pre-commit:
+  parallel: true
+  commands:
+    shellcheck:
+      glob: "**/*.{sh,bash}"
+      run: .hook-scripts/shellcheck.zsh
+
+    check-startup-times:
+      glob: "**/*.{zsh,lua,vim}"
+      run: .hook-scripts/check-startup-times.zsh
+
+    check-secrets:
+      glob: "**/*"
+      exclude: "(.git/|node_modules/)"
+      run: .hook-scripts/check-secrets.zsh
