@@ -13,3 +13,10 @@ pre-commit:
       glob: "**/*"
       exclude: "(.git/|node_modules/)"
       run: .hook-scripts/check-secrets.zsh
+
+    check-bootstrap:
+      run: ./bootstrap.sh
+
+    check-nvim:
+      glob: "**/*.{vim,lua}"
+      run: nvim --headless -es +qa
