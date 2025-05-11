@@ -1,5 +1,9 @@
 return {
 	"nvim-telescope/telescope.nvim",
+	cmd = "Telescope",
+	keys = {
+		{ "<leader>f", desc = "Telescope" },
+	},
 	tag = "0.1.5",
 	dependencies = { "nvim-lua/plenary.nvim" },
 	config = function()
