@@ -1,2 +1,6 @@
 \.git
+\.hook-scripts
+\.lefthook\.yml
+README\.md
 bootstrap\.sh
+
