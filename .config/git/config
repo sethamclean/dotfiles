@@ -10,6 +10,7 @@
 [core]
 	editor = nvim
 	excludesfile = ~/.gitignore
+	hooksPath = ~/.config/git/hooks
 
 [push]
 	default = simple
@@ -17,22 +18,13 @@
 	autoSetupRemote = true
 
 [merge]
-	tool = vimdiff3
-
-[mergetool]
+	tool = vimdiff
 	path = nvim
-
-[mergetool "vimdiff"]
-	path = nvim
-
-[mergetool "vimdiff3"]
-	path = nvim
-
-[diff]
-	tool = vimdiff3
 
 [difftool]
 	prompt = false
+	tool = vimdiff
+	path = nvim
 
 [rerere]
 	enabled = 1
@@ -44,11 +36,9 @@
 	insteadOf = "is:"
 
 [credential "https://github.com"]
-	helper = 
 	helper = !gh auth git-credential
 
 [credential "https://gist.github.com"]
-	helper = 
 	helper = !gh auth git-credential
 
 [column]
@@ -56,3 +46,15 @@
 
 [branch]
 	sort = -committerdate
+
+[pull]
+	rebase = true
+
+[init]
+	defaultBranch = main
+
+[help]
+	autocorrect = 10
+
+[commit]
+	template = ~/.config/git/hooks/commit.template

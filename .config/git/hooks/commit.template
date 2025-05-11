@@ -1,0 +1,13 @@
+# <type>(<scope>): <summary>
+#  │       │          │
+#  │       │          └─⫸ Summary in present tense. Not capitalized. No period at the end.
+#  │       │
+#  │       └─⫸ Optional scope: auth, core, http, etc.
+#  │
+#  └─⫸ Type: build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test
+#
+# Optional body - used for explaining breaking changes or providing additional context
+#
+# Optional footer - used for linking issues, indicating breaking changes, etc.
+# Examples: "Fixes #123", "BREAKING CHANGE: Remove support for X"
+
