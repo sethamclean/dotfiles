@@ -2,7 +2,6 @@ return {
 	{
 		"epwalsh/obsidian.nvim",
 		version = "*", -- use latest release instead of latest commit
-		lazy = false,
 		ft = "markdown",
 		dependencies = {
 			-- Required
@@ -18,7 +17,7 @@ return {
 			workspaces = {
 				{
 					name = "main",
-					path = "~/Documents/obsidian-vault/main",
+					path = vim.fn.expand("~/Documents/obsidian-vault/main"),
 				},
 			},
 
