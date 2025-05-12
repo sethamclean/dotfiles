@@ -12,12 +12,25 @@
 
 local M = {}
 
+-- Default knowledge base path - user should configure this
+local kb_path = vim.fn.expand("~/Documents/obsidian-vault/main")
+local debug_mode = false
+
+-- Debug function to log info only when debug mode is enabled
+local function debug_log(msg, level)
+	level = level or vim.log.levels.INFO
+	if not debug_mode then
+		return
+	end
+	vim.notify("[KB MCP] " .. msg, level)
+end
+
 -- This flag will be set to true when the server is successfully registered
 M.is_registered = false
 
 -- Initialize function that will be called from init.lua
 function M.init()
-	vim.notify("[KB MCP] Knowledge Base MCP server initialization started", vim.log.levels.INFO)
+	debug_log("Knowledge Base MCP server initialization started")
 	-- Allow the server to be auto-discovered by LLMs
 	M.server.metadata = {
 		priority = "high",
@@ -66,7 +79,7 @@ function M.init()
 		integration_strategy = "Combine knowledge base results with workspace context when relevant",
 	}
 
-	vim.notify("[KB MCP] Knowledge Base MCP server initialized with metadata and LLM guide", vim.log.levels.INFO)
+	debug_log("Knowledge Base MCP server initialized with metadata and LLM guide")
 	return true
 end
 
@@ -77,7 +90,9 @@ local debug_mode = false
 -- Debug function to log info only when debug mode is enabled
 local function debug_log(msg, level)
 	level = level or vim.log.levels.INFO
-	-- Always log regardless of debug mode to troubleshoot the registration issue
+	if not debug_mode then
+		return
+	end
 	vim.notify("[KB MCP] " .. msg, level)
 end
 

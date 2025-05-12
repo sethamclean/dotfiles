@@ -19,6 +19,7 @@ M.server_modules = {
 	terraform_cloud = "seth.mcp.terraform_cloud",
 	knowledge_base = "seth.mcp.knowledge_base",
 	code2prompt = "seth.mcp.code2prompt",
+	jira = "seth.mcp.jira",
 	-- Add new server modules here
 }
 
@@ -44,9 +45,24 @@ function M.setup()
 
 	for name, module_path in pairs(M.server_modules) do
 		local ok, module = pcall(require, module_path)
-		if ok and module and module.server then
-			mcp_servers[name] = module.server
-			debug_log("Loaded " .. name .. " MCP server")
+		if ok and module then
+			-- Initialize the module if it has an init function
+			if module.init then
+				local init_ok = module.init()
+				if not init_ok then
+					debug_log("Failed to initialize " .. name .. " MCP server", vim.log.levels.WARN)
+					goto continue
+				end
+			end
+
+			if module.server then
+				mcp_servers[name] = module.server
+				if M.debug_mode then
+					debug_log("Loaded " .. name .. " MCP server")
+				end
+			else
+				debug_log("Module " .. name .. " has no server definition", vim.log.levels.WARN)
+			end
 		else
 			local error_msg = "Failed to load " .. name .. " MCP server"
 			if type(module) == "string" then
@@ -54,6 +70,7 @@ function M.setup()
 			end
 			debug_log(error_msg, vim.log.levels.WARN)
 		end
+		::continue::
 	end
 
 	-- Register native servers with mcphub
@@ -67,11 +84,13 @@ function M.setup()
 	for name, server in pairs(mcp_servers) do
 		local ok, err = pcall(function()
 			mcphub.add_server(name, server)
-			debug_log("Registered MCP server: " .. name)
+			if M.debug_mode then
+				debug_log("Registered MCP server: " .. name)
+			end
 		end)
 
 		if not ok then
-			vim.notify("Failed to register MCP server " .. name .. ": " .. tostring(err), vim.log.levels.ERROR)
+			debug_log("Failed to register MCP server " .. name .. ": " .. tostring(err), vim.log.levels.ERROR)
 		end
 	end
 
