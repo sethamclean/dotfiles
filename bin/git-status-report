@@ -1,0 +1,170 @@
+#!/bin/bash
+
+# Function to print markdown section header
+print_section() {
+  echo -e "\n## $1\n"
+}
+
+# Function to check if directory is a git repo
+is_git_repo() {
+  git -C "$1" rev-parse --git-dir &>/dev/null
+  return $?
+}
+
+# Create the report
+echo "# Git Repository Status Report"
+echo "Generated on $(date)"
+echo -e "\nChecking repositories in $(pwd)\n"
+
+# Initialize arrays for each category
+declare -a non_git_dirs=()
+declare -a untracked_files=()
+declare -a unstaged_changes=()
+declare -a staged_uncommitted=()
+declare -a behind_branch=()
+declare -a behind_main=()
+declare -a non_master_branch=()
+declare -a clean_repos=()
+
+# Check each directory
+for dir in */; do
+  dir=${dir%/} # Remove trailing slash
+  if [ -d "$dir" ]; then
+    echo "Checking $dir..." >&2 # Progress indicator to stderr
+
+    if ! is_git_repo "$dir"; then
+      non_git_dirs+=("$dir")
+      continue
+    fi
+
+    # Get git status information
+    cd "$dir" 2>/dev/null
+
+    # Variables to track status
+    untracked_count=$(git ls-files --others --exclude-standard | wc -l)
+    unstaged_count=$(git diff --name-only | wc -l)
+    staged_count=$(git diff --cached --name-only | wc -l)
+    current_branch=$(git branch --show-current)
+    behind_count=$(git rev-list HEAD..origin/master --count 2>/dev/null || echo "N/A")
+
+    # Check if main branch exists and get behind count
+    if git show-ref --verify --quiet refs/remotes/origin/main; then
+      behind_main_count=$(git rev-list HEAD..origin/main --count 2>/dev/null || echo "N/A")
+    else
+      behind_main_count="N/A"
+    fi
+
+    has_issues=false
+
+    # Check each condition
+    if [ $untracked_count -gt 0 ]; then
+      untracked_files+=("$dir ($untracked_count files)")
+      has_issues=true
+    fi
+
+    if [ $unstaged_count -gt 0 ]; then
+      unstaged_changes+=("$dir ($unstaged_count files)")
+      has_issues=true
+    fi
+
+    if [ $staged_count -gt 0 ]; then
+      staged_uncommitted+=("$dir ($staged_count files)")
+      has_issues=true
+    fi
+
+    if [[ "$behind_count" =~ ^[0-9]+$ ]] && [ $behind_count -gt 0 ]; then
+      behind_branch+=("$dir ($behind_count commits behind master)")
+      has_issues=true
+    fi
+
+    if [[ "$behind_main_count" =~ ^[0-9]+$ ]] && [ $behind_main_count -gt 0 ]; then
+      behind_main+=("$dir ($behind_main_count commits behind main)")
+      has_issues=true
+    fi
+
+    if [ "$current_branch" != "master" ] && [ "$current_branch" != "main" ]; then
+      non_master_branch+=("$dir (on: $current_branch)")
+      has_issues=true
+    fi
+
+    if [ "$has_issues" = false ]; then
+      clean_repos+=("$dir")
+    fi
+
+    cd ..
+  fi
+done
+
+# Print results in markdown format
+print_section "Non-Git Directories"
+if [ ${#non_git_dirs[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for dir in "${non_git_dirs[@]}"; do
+    echo "- $dir"
+  done
+fi
+
+print_section "Repositories with Untracked Files"
+if [ ${#untracked_files[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${untracked_files[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories with Unstaged Changes"
+if [ ${#unstaged_changes[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${unstaged_changes[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories with Staged Uncommitted Changes"
+if [ ${#staged_uncommitted[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${staged_uncommitted[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories Behind Master Branch"
+if [ ${#behind_branch[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${behind_branch[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories Behind Main Branch"
+if [ ${#behind_main[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${behind_main[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories on Non-Master Branch"
+if [ ${#non_master_branch[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${non_master_branch[@]}"; do
+    echo "- $repo"
+  done
+fi
+
+print_section "Repositories in Good State"
+echo "(No untracked files, no changes, up to date)"
+if [ ${#clean_repos[@]} -eq 0 ]; then
+  echo "None found"
+else
+  for repo in "${clean_repos[@]}"; do
+    echo "- $repo"
+  done
+fi

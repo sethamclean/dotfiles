@@ -1,0 +1,132 @@
+#!/bin/bash
+
+# Parse command line arguments
+DRY_RUN=0
+
+while [[ "$#" -gt 0 ]]; do
+  case $1 in
+  -n | --dry-run) DRY_RUN=1 ;;
+  *)
+    echo "Unknown parameter: $1"
+    echo "Usage: $0 [-n|--dry-run]"
+    exit 1
+    ;;
+  esac
+  shift
+done
+
+# Ensure gh CLI is installed
+if ! command -v gh &>/dev/null; then
+  echo "GitHub CLI (gh) is not installed. Please install it first:"
+  echo "https://cli.github.com/manual/installation"
+  exit 1
+fi
+
+# Ensure gh is authenticated with correct scope
+if ! gh auth status &>/dev/null; then
+  echo "Please login to GitHub CLI first using: gh auth login"
+  exit 1
+fi
+
+# Check for codespace scope
+if ! gh auth status 2>&1 | grep -q "codespace"; then
+  echo "GitHub CLI needs the 'codespace' scope. Please run:"
+  echo "gh auth refresh -h github.com -s codespace"
+  exit 1
+fi
+
+# Get codespace using gh cli
+echo "Fetching available codespaces..."
+
+# Check if fzf is installed
+if ! command -v fzf &>/dev/null; then
+  echo "fzf is not installed. Please install it first."
+  exit 1
+fi
+
+# Get list of available codespaces
+mapfile -t CODESPACES < <(gh codespace list --json name,displayName,state |
+  jq -r '.[] | select(.state=="Available") | "\(.displayName) [\(.name)]"')
+
+if [ ${#CODESPACES[@]} -eq 0 ]; then
+  echo "No available codespaces found."
+  exit 1
+elif [ ${#CODESPACES[@]} -eq 1 ]; then
+  CODESPACE_INFO="${CODESPACES[0]}"
+  echo "Using only available codespace: $CODESPACE_INFO"
+else
+  # Multiple codespaces available - use fzf for selection
+  CODESPACE_INFO=$(printf "%s\n" "${CODESPACES[@]}" | fzf --height=10 --prompt="Select codespace: ")
+  if [ -z "$CODESPACE_INFO" ]; then
+    echo "No codespace selected. Exiting."
+    exit 1
+  fi
+fi
+
+if [ -z "$CODESPACE_INFO" ]; then
+  echo "No codespace selected. Exiting."
+  exit 1
+fi
+
+# Extract the codespace name from the selection
+CODESPACE_NAME=$(echo "$CODESPACE_INFO" | sed -E 's/.*\[(.*)\]/\1/')
+
+# List remote files
+echo "Listing remote files..."
+if ! REMOTE_FILES=$(gh codespace ssh --codespace "$CODESPACE_NAME" -- "cd /workspaces && ls -A"); then
+  echo "Error listing remote workspace files"
+  exit 1
+fi
+
+# Debug output
+echo "Debug: Found the following remote files:"
+echo "$REMOTE_FILES"
+
+# Copy each file/directory individually
+echo "Processing files from codespace..."
+for item in $REMOTE_FILES; do
+  if [[ "$item" == ".codespaces" ]]; then
+    echo "Skipping .codespaces directory"
+    continue
+  fi
+
+  target_path="/workspaces/$item"
+
+  if [ -e "$target_path" ]; then
+    echo "Skipping existing item: $item"
+    continue
+  fi
+
+  if [ $DRY_RUN -eq 1 ]; then
+    echo "Would copy: $item"
+  else
+    echo "Copying: $item"
+    # Check if we have write permissions to /workspaces
+    if [ ! -w "/workspaces" ]; then
+      echo "Error: No write permission to /workspaces directory"
+      exit 1
+    fi
+
+    target_dir="/workspaces/$item"
+
+    # Remove the target if it exists to ensure clean copy
+    if [[ -e "$target_dir" ]]; then
+      rm -rf "$target_dir"
+    fi
+
+    # Use remote: prefix and specify the path relative to the codespace
+    if ! gh codespace cp --recursive -e --codespace "$CODESPACE_NAME" "remote:/workspaces/$item" "/workspaces/"; then
+      echo "Error copying $item from codespace (Exit code: $?)"
+      # Print more details about the target
+      ls -la "/workspaces/$item" 2>/dev/null || echo "Target does not exist: /workspaces/$item"
+      exit 1
+    fi
+  fi
+done
+
+if [ $DRY_RUN -eq 1 ]; then
+  echo "----------------------------------------"
+  echo "DRY RUN COMPLETE - No files were copied"
+else
+  echo "Sync completed successfully!"
+fi
