@@ -24,6 +24,7 @@ M.stats = {
 	passed = 0,
 	failed = 0,
 	total = 0,
+	failed_tests = {}, -- Track names of failed tests
 }
 
 -- Set debug mode
@@ -53,6 +54,11 @@ function M.run_test(module, test_name)
 			print("Test failed with error:", result)
 		end
 		M.stats.failed = M.stats.failed + 1
+		-- Record the failed test name and error
+		table.insert(M.stats.failed_tests, {
+			name = test_name,
+			error = result
+		})
 		return false
 	end
 
@@ -67,6 +73,11 @@ function M.run_test(module, test_name)
 			print("Test did not return true")
 		end
 		M.stats.failed = M.stats.failed + 1
+		-- Record the failed test name
+		table.insert(M.stats.failed_tests, {
+			name = test_name,
+			error = "Test did not return true"
+		})
 		return false
 	end
 end
@@ -159,7 +170,7 @@ end
 -- - filter: Function to filter test names (optional)
 function M.run_tests(options)
 	-- Reset stats
-	M.stats = { passed = 0, failed = 0, total = 0 }
+	M.stats = { passed = 0, failed = 0, total = 0, failed_tests = {} }
 
 	-- If specific module is provided, only run tests from that module
 	if options.module then
@@ -218,6 +229,14 @@ function M.print_summary()
 	print(string.format("Total Tests Run: %d", M.stats.total))
 	print(string.format("✓ Passed: %d", M.stats.passed))
 	print(string.format("✗ Failed: %d", M.stats.failed))
+	
+	-- Print failed test names and errors if any
+	if #M.stats.failed_tests > 0 then
+		print("\nFailed Tests:")
+		for _, test in ipairs(M.stats.failed_tests) do
+			print(string.format("  - %s: %s", test.name, test.error))
+		end
+	end
 end
 
 -- Helper function to list available test modules

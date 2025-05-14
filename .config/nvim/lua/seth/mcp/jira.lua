@@ -207,18 +207,28 @@ table.insert(M.server.capabilities.tools, {
 			req.params = {}
 		end
 
+		-- Validate error function exists before trying to use it
+		local function send_error(msg)
+			if res.error then
+				return res:error(msg)
+			else
+				-- Fallback to text response if error() not available
+				return res:text(msg):send()
+			end
+		end
+
 		-- Validate domain parameter
 		if not req.params.domain then
-			return res:error("Domain parameter is required")
+			return send_error("Domain parameter is required")
 		end
 
 		if type(req.params.domain) ~= "string" then
-			return res:error("Domain must be a string")
+			return send_error("Domain must be a string")
 		end
 
 		-- Enforce jira.idexx.com domain
 		if req.params.domain ~= "jira.idexx.com" then
-			return res:error("Invalid domain. Only 'jira.idexx.com' is allowed.")
+			return send_error("Invalid domain. Only 'jira.idexx.com' is allowed.")
 		end
 
 		config.domain = req.params.domain
@@ -232,7 +242,14 @@ table.insert(M.server.capabilities.tools, {
 			},
 		}
 		M.debug_log("set_config response: " .. vim.inspect(data))
-		return res:json(data):send()
+
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json(data):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(data)):send()
+		end
 	end,
 })
 
@@ -245,15 +262,24 @@ table.insert(M.server.capabilities.tools, {
 		properties = {},
 	},
 	handler = function(_, res)
-		-- Create response data
-		local response_data = {
-			domain = config.domain,
-			base_url = config.domain and get_base_url() or nil,
-			has_api_token = os.getenv("JIRA_TOKEN") ~= nil,
-		}
+		-- Create response data with explicit nil handling
+		local response_data = {}
+		-- Only include domain and base_url if they are actually set
+		if config.domain then
+			response_data.domain = config.domain
+			response_data.base_url = get_base_url()
+		end
+		response_data.has_api_token = os.getenv("JIRA_TOKEN") ~= nil
 
-		M.debug_log("get_config response: " .. vim.inspect(response_data))
-		return res:json(response_data):send()
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			M.debug_log("get_config response (json): " .. vim.inspect(response_data))
+			return res:json(response_data):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			M.debug_log("get_config response (text): " .. vim.inspect(response_data))
+			return res:text(vim.fn.json_encode(response_data)):send()
+		end
 	end,
 })
 
@@ -268,7 +294,13 @@ table.insert(M.server.capabilities.tools, {
 	handler = function(_, res)
 		config.domain = nil
 		M.debug_log("Cleared all configuration values")
-		return res:json({ status = "Configuration cleared successfully" }):send()
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json({ status = "Configuration cleared successfully" }):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode({ status = "Configuration cleared successfully" })):send()
+		end
 	end,
 })
 
@@ -319,10 +351,18 @@ table.insert(M.server.capabilities.tools, {
 		},
 		required = { "issue_key" },
 	},
-	handler = function(req)
+	handler = function(req, res)
 		M.debug_log("Getting issue details for " .. req.params.issue_key)
 		local result = make_jira_request("GET", "issue/" .. req.params.issue_key)
-		return result
+		M.debug_log("get_issue response: " .. vim.inspect(result))
+
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json(result):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 
@@ -381,7 +421,13 @@ table.insert(M.server.capabilities.tools, {
 		}
 
 		local result = make_jira_request("POST", "issue", issue_data)
-		return res:json(result):send()
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json(result):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 
@@ -413,8 +459,15 @@ table.insert(M.server.capabilities.tools, {
 			fields = { "summary", "description", "status", "priority", "issuetype" },
 		}
 
-		local result = make_jira_request("POST", "search", search_data)
-		return res:json(result):send()
+		local result = make_jira_request("POST", "search/jql", search_data)
+		-- Check if json method is available, otherwise fallback to text
+		M.debug_log("search_issues response: " .. vim.inspect(result))
+		if res.json then
+			return res:json(result):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 
@@ -484,8 +537,16 @@ table.insert(M.server.capabilities.tools, {
 			},
 		}
 
-		local result = make_jira_request("POST", "search", search_data)
-		return res:json(result):send()
+		local result = make_jira_request("POST", "search/jql", search_data)
+		M.debug_log("list_project_issues response: " .. vim.inspect(result))
+
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json(result):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 
@@ -499,7 +560,13 @@ table.insert(M.server.capabilities.resources, {
 	handler = function(req, res)
 		M.debug_log("Getting current user information")
 		local result = make_jira_request("GET", "myself")
-		return res:json(result):send()
+		-- Check if json method is available, otherwise fallback to text
+		if res.json then
+			return res:json(result):send()
+		else
+			-- Fallback to text response with manually encoded JSON
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 
