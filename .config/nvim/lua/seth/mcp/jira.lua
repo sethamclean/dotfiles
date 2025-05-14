@@ -1,5 +1,5 @@
 -- Jira MCP server
-local M = {}
+local M = { is_registered = false }
 
 -- Debug mode flag
 M.debug_mode = false
@@ -7,8 +7,37 @@ M.debug_mode = false
 -- This flag will be set to true when the server is successfully registered
 M.is_registered = false
 
+-- Response object creator
+local function create_mcphub_response()
+	local response = {}
+	response.text = function(self, content, mime_type)
+		self.body = content
+		self.mime_type = mime_type or "text/plain"
+		return self
+	end
+	response.json = function(self, content)
+		self.body = vim.fn.json_encode(content)
+		self.mime_type = "application/json"
+		return self
+	end
+	response.error = function(self, msg)
+		self.body = msg
+		self.mime_type = "text/plain"
+		self.is_error = true
+		return self:send()
+	end
+	response.send = function(self)
+		return {
+			body = self.body,
+			mime_type = self.mime_type,
+			is_error = self.is_error,
+		}
+	end
+	return response
+end
+
 -- Debug logging function
-local function debug_log(msg, level)
+function M.debug_log(msg, level)
 	if not M.debug_mode then
 		return
 	end
@@ -16,38 +45,38 @@ local function debug_log(msg, level)
 	vim.notify("[Jira MCP] " .. msg, level)
 end
 
--- Helper function to create a default response object
-local function create_default_response()
-	-- Create base response object
+-- Helper function to create MCPHub-style response objects for testing
+function M.create_default_response()
 	local response = {}
-
-	-- Explicitly attach json method to response object
-	response.json = function(_, data)
-		-- Ensure data is not nil
-		data = data or {}
-		-- Return object with send method
+	response.text = function(self, content, mime_type)
+		self.body = content
+		self.mime_type = mime_type or "text/plain"
+		return self
+	end
+	response.json = function(self, content)
+		self.body = vim.fn.json_encode(content)
+		self.mime_type = "application/json"
+		return self
+	end
+	response.error = function(self, msg)
+		self.body = msg
+		self.mime_type = "text/plain"
+		self.is_error = true
+		return self:send()
+	end
+	response.send = function(self)
 		return {
-			send = function()
-				return data
-			end,
+			body = self.body,
+			mime_type = self.mime_type,
+			is_error = self.is_error,
 		}
 	end
-
-	-- Create metatable to handle method calls
-	local mt = {
-		__index = response, -- This makes method calls work with : syntax
-	}
-
-	-- Set the metatable
-	setmetatable(response, mt)
-
-	-- Return the response object
 	return response
 end
 
 -- Initialize function that will be called from init.lua
 function M.init()
-	debug_log("Jira MCP server initialization started")
+	M.debug_log("Jira MCP server initialization started")
 
 	-- Allow the server to be auto-discovered by LLMs
 	M.server.metadata = {
@@ -93,7 +122,7 @@ function M.init()
 		integration_strategy = "Combine Jira context with workspace information when relevant",
 	}
 
-	debug_log("Jira MCP server initialized with metadata and LLM guide")
+	M.debug_log("Jira MCP server initialized with metadata and LLM guide")
 	return true
 end
 
@@ -108,19 +137,52 @@ M.server = {
 	},
 }
 
--- Configuration variables with environment fallback
+-- Configuration variables
 local config = {
-	base_url = nil,
-	email = nil,
-	api_token = nil,
+	domain = nil,
 }
 
--- Load config from environment variables
-local function load_env_config()
-	config.base_url = config.base_url or os.getenv("JIRA_BASE_URL")
-	config.email = config.email or os.getenv("JIRA_EMAIL")
-	config.api_token = config.api_token or os.getenv("JIRA_TOKEN")
+-- Load API token from environment variable
+local function get_api_token()
+	local token = os.getenv("JIRA_TOKEN")
+	if not token or token == "" then
+		error("JIRA_TOKEN environment variable not set or is empty")
+	end
+	return token
 end
+
+-- Get full base URL from domain
+local function get_base_url()
+	if not config.domain then
+		error("Jira domain not configured. Please set via set_config endpoint.")
+	end
+	-- Start with the domain
+	local base_url = config.domain
+	if not base_url then
+		error("Base URL is nil")
+	end
+
+	-- If it already has a protocol, use it as is, otherwise prepend https://
+	if type(base_url) == "string" and not base_url:match("^https?://") then
+		base_url = "https://" .. base_url
+	end
+
+	-- Remove any trailing slashes if base_url is a string
+	if type(base_url) == "string" then
+		base_url = base_url:gsub("/+$", "")
+		-- Remove any whitespace
+		base_url = base_url:gsub("%s+", "")
+
+		-- Additional URL validation
+		if not base_url:match("^https?://[%w%.%-]+%.%w+") then
+			error("Invalid base URL format: " .. base_url)
+		end
+	end
+
+	return base_url
+end
+
+-- Helper function to create a default response object
 
 -- Set configuration values
 table.insert(M.server.capabilities.tools, {
@@ -129,64 +191,48 @@ table.insert(M.server.capabilities.tools, {
 	inputSchema = {
 		type = "object",
 		properties = {
-			base_url = {
+			domain = {
 				type = "string",
-				description = "Jira base URL (e.g., https://your-domain.atlassian.net)",
-			},
-			email = {
-				type = "string",
-				description = "Jira account email",
-			},
-			api_token = {
-				type = "string",
-				description = "Jira API token",
+				description = "Full Jira domain (must be 'jira.idexx.com')",
 			},
 		},
+		required = { "domain" },
 	},
 	handler = function(req, res)
-		-- Ensure req and res are properly initialized
-		req = req or {}
-		req.params = req.params or {}
-
-		if not res then
-			res = create_default_response()
+		-- Ensure req is properly initialized
+		if not req then
+			req = {}
+		end
+		if not req.params then
+			req.params = {}
 		end
 
-		-- Initialize res.json if it doesn't exist (defensive programming)
-		if not res.json then
-			res.json = function(_, data)
-				return {
-					send = function()
-						return data
-					end,
-				}
-			end
+		-- Validate domain parameter
+		if not req.params.domain then
+			return res:error("Domain parameter is required")
 		end
 
-		if req.params.base_url then
-			config.base_url = req.params.base_url
-			debug_log("Updated base_url configuration")
-		end
-		if req.params.email then
-			config.email = req.params.email
-			debug_log("Updated email configuration")
-		end
-		if req.params.api_token then
-			config.api_token = req.params.api_token
-			debug_log("Updated api_token configuration")
+		if type(req.params.domain) ~= "string" then
+			return res:error("Domain must be a string")
 		end
 
-		-- Load environment variables as fallback after updating config
-		load_env_config()
+		-- Enforce jira.idexx.com domain
+		if req.params.domain ~= "jira.idexx.com" then
+			return res:error("Invalid domain. Only 'jira.idexx.com' is allowed.")
+		end
 
-		return res:json({
+		config.domain = req.params.domain
+		M.debug_log("Updated Jira domain to: " .. config.domain)
+
+		local data = {
 			status = "Configuration updated successfully",
 			config = {
-				base_url = config.base_url or "",
-				email = config.email or "",
-				has_api_token = config.api_token ~= nil,
+				domain = config.domain,
+				base_url = get_base_url(),
 			},
-		}):send()
+		}
+		M.debug_log("set_config response: " .. vim.inspect(data))
+		return res:json(data):send()
 	end,
 })
 
@@ -199,21 +245,14 @@ table.insert(M.server.capabilities.tools, {
 		properties = {},
 	},
 	handler = function(_, res)
-		-- Ensure we have a valid response object
-		if not res then
-			res = create_default_response()
-		end
-
-		-- Load environment variables first
-		load_env_config()
-
 		-- Create response data
 		local response_data = {
-			base_url = config.base_url or "",
-			email = config.email or "",
-			has_api_token = config.api_token ~= nil,
+			domain = config.domain,
+			base_url = config.domain and get_base_url() or nil,
+			has_api_token = os.getenv("JIRA_TOKEN") ~= nil,
 		}
 
+		M.debug_log("get_config response: " .. vim.inspect(response_data))
 		return res:json(response_data):send()
 	end,
 })
@@ -226,110 +265,42 @@ table.insert(M.server.capabilities.tools, {
 		type = "object",
 		properties = {},
 	},
-	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		config.base_url = nil
-		config.email = nil
-		config.api_token = nil
-		debug_log("Cleared all configuration values")
+	handler = function(_, res)
+		config.domain = nil
+		M.debug_log("Cleared all configuration values")
 		return res:json({ status = "Configuration cleared successfully" }):send()
 	end,
 })
 
+local curl_utils = require("seth.mcp.curl_utils")
+
 -- Helper function to make HTTP requests to Jira API
 local function make_jira_request(method, endpoint, data)
-	-- Load environment variables as fallback
-	load_env_config()
+	local api_token = get_api_token()
+	local url = string.format("%s/rest/api/latest/%s", get_base_url(), endpoint)
 
-	if not config.base_url or not config.email or not config.api_token then
-		error(
-			"Jira configuration missing. Please set values via set_config endpoint or use JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN environment variables."
-		)
-	end
+	M.debug_log("Making request to: " .. endpoint)
 
-	-- Check config values
-	debug_log(
-		string.format(
-			"API request config: base_url=%s, email=%s, token_length=%s",
-			config.base_url or "nil",
-			config.email or "nil",
-			config.api_token and string.len(config.api_token) or "nil"
-		)
-	)
+	local options = {
+		headers = {
+			["Authorization"] = "Bearer " .. api_token,
+			["Accept"] = "application/json",
+			["Content-Type"] = "application/json",
+			["X-Atlassian-Token"] = "no-check",
+		},
+	}
 
-	local auth = string.format("%s:%s", config.email, config.api_token)
-	debug_log("Making Jira request to endpoint: " .. endpoint)
-
-	-- Create base64 authorization string using Lua instead of shell commands
-	local function base64encode(str)
-		local b = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-		return (
-			(str:gsub(".", function(x)
-				local r, b = "", x:byte()
-				for i = 8, 1, -1 do
-					r = r .. (b % 2 ^ i - b % 2 ^ (i - 1) > 0 and "1" or "0")
-				end
-				return r
-			end) .. "0000"):gsub("%d%d%d?%d?%d?%d?", function(x)
-				if #x < 6 then
-					return ""
-				end
-				local c = 0
-				for i = 1, 6 do
-					c = c + (x:sub(i, i) == "1" and 2 ^ (6 - i) or 0)
-				end
-				return b:sub(c + 1, c + 1)
-			end) .. ({ "", "==", "=" })[#str % 3 + 1]
-		)
-	end
-
-	local auth_base64 = base64encode(auth)
-	debug_log("Generated base64 auth string (first 10 chars): " .. string.sub(auth_base64, 1, 10) .. "...")
-
-	-- Use -i to include headers in response and -s for silent mode without progress meter
-	local curl_cmd = string.format(
-		'curl -i -s -X %s "%s/rest/api/3/%s" -H "Authorization: Basic %s" -H "Content-Type: application/json"',
-		method,
-		config.base_url,
-		endpoint,
-		auth_base64
-	)
-
-	-- If there's data, write it to a temporary file
-	local data_file
 	if data then
-		data_file = os.tmpname()
-		local data_handle = io.open(data_file, "w")
-		data_handle:write(vim.fn.json_encode(data))
-		data_handle:close()
-		curl_cmd = curl_cmd .. string.format(" -d '@%s'", data_file)
+		options.data = data -- curl_utils will handle JSON encoding
 	end
 
-	debug_log("Executing curl command (auth/data redacted)")
-	local result = vim.fn.system(curl_cmd)
-
-	-- Clean up data file if it exists
-	if data_file then
-		os.remove(data_file)
+	local response, error_or_headers = curl_utils.make_request(method, url, options)
+	if not response then
+		M.debug_log("Request failed: " .. tostring(error_or_headers), vim.log.levels.ERROR)
+		error(error_or_headers)
 	end
 
-	if vim.v.shell_error ~= 0 then
-		debug_log("Jira API request failed with error: " .. result)
-		error(string.format("Jira API request failed: %s", result))
-	end
-
-	debug_log("Got response from Jira API")
-	-- Try to decode JSON response
-	local ok, decoded = pcall(vim.fn.json_decode, result)
-	if not ok then
-		debug_log("Failed to decode JSON response: " .. tostring(decoded))
-		debug_log("Raw response: " .. result)
-		error("Failed to decode Jira API response")
-	end
-
-	return decoded
+	return response, error_or_headers
 end
 
 -- Tools
@@ -348,13 +319,10 @@ table.insert(M.server.capabilities.tools, {
 		},
 		required = { "issue_key" },
 	},
-	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Getting issue details for " .. req.params.issue_key)
+	handler = function(req)
+		M.debug_log("Getting issue details for " .. req.params.issue_key)
 		local result = make_jira_request("GET", "issue/" .. req.params.issue_key)
-		return res:json(result):send()
+		return result
 	end,
 })
 
@@ -386,10 +354,7 @@ table.insert(M.server.capabilities.tools, {
 		required = { "project_key", "summary" },
 	},
 	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Creating new issue in project " .. req.params.project_key)
+		M.debug_log("Creating new issue in project " .. req.params.project_key)
 
 		-- Build the issue data according to Jira API v3 format
 		local issue_data = {
@@ -440,10 +405,7 @@ table.insert(M.server.capabilities.tools, {
 		required = { "jql" },
 	},
 	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Searching issues with JQL: " .. req.params.jql)
+		M.debug_log("Searching issues with JQL: " .. req.params.jql)
 
 		local search_data = {
 			jql = req.params.jql,
@@ -490,10 +452,7 @@ table.insert(M.server.capabilities.tools, {
 		required = { "project_key" },
 	},
 	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Listing issues for project " .. req.params.project_key)
+		M.debug_log("Listing issues for project " .. req.params.project_key)
 
 		-- Construct JQL query
 		local jql_parts = {
@@ -538,10 +497,7 @@ table.insert(M.server.capabilities.resources, {
 	uri = "jira://user/current",
 	description = "Get information about the current Jira user",
 	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Getting current user information")
+		M.debug_log("Getting current user information")
 		local result = make_jira_request("GET", "myself")
 		return res:json(result):send()
 	end,
@@ -555,10 +511,7 @@ table.insert(M.server.capabilities.resourceTemplates, {
 	uriTemplate = "jira://issue/{issue_key}",
 	description = "Get detailed information about a specific issue",
 	handler = function(req, res)
-		if not res then
-			res = create_default_response()
-		end
-		debug_log("Getting detailed information for issue " .. req.params.issue_key)
+		M.debug_log("Getting detailed information for issue " .. req.params.issue_key)
 		local result =
 			make_jira_request("GET", string.format("issue/%s?expand=renderedFields,names,schema", req.params.issue_key))
 		return res:json(result):send()
@@ -571,7 +524,7 @@ table.insert(M.server.capabilities.resourceTemplates, {
 	uriTemplate = "jira://project/{project_key}",
 	description = "Get detailed information about a specific project",
 	handler = function(req, res)
-		debug_log("Getting detailed information for project " .. req.params.project_key)
+		M.debug_log("Getting detailed information for project " .. req.params.project_key)
 		local result = make_jira_request("GET", string.format("project/%s", req.params.project_key))
 		return res:json(result):send()
 	end,
@@ -580,14 +533,15 @@ table.insert(M.server.capabilities.resourceTemplates, {
 -- Set debug mode
 function M.set_debug_mode(enabled)
 	M.debug_mode = enabled
-	debug_log("Debug mode " .. (enabled and "enabled" or "disabled"))
+	M.debug_log("Debug mode " .. (enabled and "enabled" or "disabled"))
 end
 
+-- Test function to directly invoke tools/resources
 -- Test function to directly invoke tools/resources
 function M.test(tool_name, params)
 	-- Enable debug mode for testing
 	M.set_debug_mode(true)
-	debug_log("Testing tool: " .. tool_name)
+	M.debug_log("Testing tool: " .. tool_name)
 
 	-- Initialize server if not already done
 	if not M.is_registered then
@@ -607,16 +561,20 @@ function M.test(tool_name, params)
 		error("Tool not found: " .. tool_name)
 	end
 
-	-- Create test request and response objects
+	-- Create mock request and response objects like MCPHub would
 	local req = {
 		params = params or {},
 	}
-	local res = create_default_response()
+	local res = create_mcphub_response()
 
-	-- Execute the tool handler
-	debug_log("Executing tool with params: " .. vim.inspect(params))
+	-- Execute the tool handler as MCPHub would
 	local result = tool.handler(req, res)
-	debug_log("Tool execution result: " .. vim.inspect(result))
+	M.debug_log("Tool execution result: " .. vim.inspect(result))
+
+	-- Check for error response
+	if result and result.is_error then
+		error(result.body)
+	end
 
 	return result
 end
