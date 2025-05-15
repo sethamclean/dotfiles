@@ -193,7 +193,7 @@ table.insert(M.server.capabilities.tools, {
 		properties = {
 			domain = {
 				type = "string",
-				description = "Full Jira domain (must be 'jira.idexx.com')",
+				description = "Full Jira domain",
 			},
 		},
 		required = { "domain" },
@@ -207,14 +207,29 @@ table.insert(M.server.capabilities.tools, {
 			req.params = {}
 		end
 
-		-- Validate error function exists before trying to use it
+		-- Create response if not provided (for testing)
+		if not res then
+			res = M.create_default_response()
+		end
+
+		-- Create error response properly that always returns a table
 		local function send_error(msg)
-			if res.error then
-				return res:error(msg)
-			else
-				-- Fallback to text response if error() not available
-				return res:text(msg):send()
-			end
+			M.debug_log("Sending error: " .. msg)
+
+			-- Create a clean response object for consistent structure
+			local response = M.create_default_response()
+
+			-- Set error properties
+			response.body = msg
+			response.mime_type = "text/plain"
+			response.is_error = true
+
+			-- Return structured response directly
+			return {
+				body = response.body,
+				mime_type = response.mime_type,
+				is_error = response.is_error,
+			}
 		end
 
 		-- Validate domain parameter
@@ -226,9 +241,9 @@ table.insert(M.server.capabilities.tools, {
 			return send_error("Domain must be a string")
 		end
 
-		-- Enforce jira.idexx.com domain
-		if req.params.domain ~= "jira.idexx.com" then
-			return send_error("Invalid domain. Only 'jira.idexx.com' is allowed.")
+		-- Basic domain validation
+		if not req.params.domain:match("^[%w%.-]+%.%w+$") then
+			return send_error("Invalid domain format. Please provide a valid domain name.")
 		end
 
 		config.domain = req.params.domain
@@ -307,29 +322,271 @@ table.insert(M.server.capabilities.tools, {
 local curl_utils = require("seth.mcp.curl_utils")
 
 -- Helper function to make HTTP requests to Jira API
+-- This function handles authentication using Personal Access Tokens (PATs)
+-- PATs must be provided via JIRA_TOKEN environment variable
+-- PATs are supported in Jira Server/Data Center 8.14+ and must be used as Bearer tokens
+-- Usage limitations:
+-- 1. Only works with REST API endpoints
+-- 2. Cannot be used for basic auth or non-REST authentication
+-- 3. Session handling depends on atlassian.pats.invalidate.session.enabled setting
+-- Helper function to build JQL queries
+function M.build_jql_query(params)
+	local conditions = {}
+
+	-- Handle project key(s)
+	if params.project_keys then
+		-- Multiple project keys
+		table.insert(conditions, "project in (" .. table.concat(params.project_keys, ", ") .. ")")
+	elseif params.project_key then
+		-- Single project key
+		table.insert(conditions, "project = " .. params.project_key)
+	end
+
+	-- Handle status (quoted because it often contains spaces)
+	if params.status then
+		table.insert(conditions, 'status = "' .. params.status .. '"')
+	end
+
+	-- Handle priority (no quotes for single word values)
+	if params.priority then
+		table.insert(conditions, "priority = " .. params.priority)
+	end
+
+	-- Handle text search (quoted as it's a text search)
+	if params.text_search then
+		table.insert(conditions, 'text ~ "' .. params.text_search .. '"')
+	end
+
+	-- Combine conditions with AND
+	local query = table.concat(conditions, " AND ")
+
+	-- Add ordering if specified
+	if params.order_by then
+		query = query .. " ORDER BY " .. params.order_by
+		if params.order_direction then
+			query = query .. " " .. params.order_direction
+		end
+	end
+
+	return query
+end
+
 local function make_jira_request(method, endpoint, data)
 	local api_token = get_api_token()
-	local url = string.format("%s/rest/api/latest/%s", get_base_url(), endpoint)
+	-- Use v2 API explicitly instead of 'latest'
+	local url = string.format("%s/rest/api/2/%s", get_base_url(), endpoint)
 
-	M.debug_log("Making request to: " .. endpoint)
+	M.debug_log(string.format("Making %s request to %s", method, url))
 
+	-- Validate required fields before making request
+	if not api_token then
+		return nil, "No API token found. Please set JIRA_TOKEN environment variable."
+	end
+
+	-- Initialize request options with proper headers and debug-friendly settings
 	local options = {
+		method = method,
 		headers = {
 			["Authorization"] = "Bearer " .. api_token,
-			["Accept"] = "application/json",
 			["Content-Type"] = "application/json",
-			["X-Atlassian-Token"] = "no-check",
+			["Accept"] = "application/json",
+		},
+		debug = M.debug_mode, -- Only enable debug in debug mode
+		debug_options = {
+			write_debug_script = M.debug_mode, -- Only write debug script in debug mode
+			include_headers = false, -- Don't include headers in normal response
+			show_progress = false,
+			max_time = 30,
+			fail_on_error = true, -- Exit on HTTP errors for cleaner error handling
+			silent = not M.debug_mode, -- Only show output in debug mode
 		},
 	}
 
 	if data then
-		options.data = data -- curl_utils will handle JSON encoding
+		-- Special handling for search endpoint
+		if endpoint == "search" then
+			-- Keep JQL query as is without extra escaping
+			if data.jql then
+				M.debug_log("Raw JQL query: " .. vim.inspect(data.jql))
+
+				-- Validate JQL query format
+				if type(data.jql) ~= "string" then
+					return nil, "JQL query must be a string"
+				end
+			end
+
+			-- Ensure fields are specified with proper defaults
+			if not data.fields then
+				data.fields = {
+					"summary",
+					"description",
+					"status",
+					"priority",
+					"issuetype",
+					"created",
+					"updated",
+					"assignee",
+					"reporter",
+				}
+			end
+
+			-- Always include validation and proper expansion
+			data.validateQuery = true
+			data.expand = data.expand or { "schema", "names" }
+		end
+
+		-- Let curl_utils handle proper JSON encoding
+		options.data = vim.fn.json_encode(data)
+		M.debug_log("Request payload: " .. vim.inspect(options.data))
 	end
 
 	local response, error_or_headers = curl_utils.make_request(method, url, options)
+	local error_msg
+
+	-- Check if we got both a response and headers
+	if response and error_or_headers then
+		M.debug_log("Got response with headers. Response: " .. vim.inspect(response))
+		M.debug_log("Headers: " .. vim.inspect(error_or_headers))
+
+		-- Try to parse the response as JSON
+		local success, parsed = pcall(vim.fn.json_decode, response)
+		if success then
+			M.debug_log("Successfully parsed response JSON: " .. vim.inspect(parsed))
+			
+			-- Only treat as error if we have explicit error indicators
+			if parsed.errorMessages or parsed.errors or (parsed.error and not parsed.id) then
+				-- Extract error messages from Jira response format
+				if parsed.errorMessages then
+					error_msg = table.concat(parsed.errorMessages, "; ")
+				elseif parsed.errors then
+					local error_msgs = {}
+					for k, v in pairs(parsed.errors) do
+						table.insert(error_msgs, k .. ": " .. v)
+					end
+					error_msg = table.concat(error_msgs, "; ")
+				elseif parsed.error then
+					error_msg = parsed.error
+				end
+				
+				M.debug_log("Extracted error message: " .. error_msg)
+				return nil, error_msg
+			else
+				-- If no error indicators, this is a successful response with headers
+				return parsed
+			end
+		else
+			-- If not JSON, return the raw response
+			M.debug_log("Response not JSON, using raw response")
+			return nil, response
+		end
+	end
+
+	-- No response means a connection/curl error
 	if not response then
-		M.debug_log("Request failed: " .. tostring(error_or_headers), vim.log.levels.ERROR)
-		error(error_or_headers)
+		if type(error_or_headers) == "string" then
+			if error_or_headers:match("401") then
+				error_msg = "Authentication failed: Invalid or expired PAT token. Please ensure your JIRA_TOKEN environment variable contains a valid token."
+			elseif error_or_headers:match("403") then
+				error_msg = "Authorization failed: Your PAT token lacks the required permissions for this operation."
+			elseif error_or_headers:match("429") then
+				error_msg = "Rate limit exceeded: Too many API requests. Please try again later."
+			elseif error_or_headers:match("400") then
+				-- For 400 errors without a response body, try one more time with debug
+				local raw_response = curl_utils.make_request(method, url, {
+					headers = options.headers,
+					data = options.data,
+					debug = true,
+				})
+				error_msg = raw_response or error_or_headers
+			else
+				error_msg = error_or_headers
+			end
+		else
+			error_msg = vim.inspect(error_or_headers)
+		end
+		
+		M.debug_log("Connection/curl error: " .. error_msg, vim.log.levels.ERROR)
+		return nil, error_msg
+	end
+
+	-- Log the raw response for debugging
+	M.debug_log("Raw response: " .. vim.inspect(response))
+
+	if not response then
+		local error_msg
+		-- Check for common PAT-related errors
+		if type(error_or_headers) == "string" then
+			if error_or_headers:match("401") then
+				error_msg =
+					"Authentication failed: Invalid or expired PAT token. Please ensure your JIRA_TOKEN environment variable contains a valid token."
+			elseif error_or_headers:match("403") then
+				error_msg = "Authorization failed: Your PAT token lacks the required permissions for this operation."
+			elseif error_or_headers:match("429") then
+				error_msg = "Rate limit exceeded: Too many API requests. Please try again later."
+			elseif error_or_headers:match("400") then
+				-- For 400 errors, try to make the request again with more debugging info
+				local raw_response = curl_utils.make_request("POST", url, {
+					headers = options.headers,
+					data = options.data,
+					debug = true, -- Enable curl debug output
+				})
+				error_msg = string.format(
+					"Bad request (400). Request failed with error:\n%s\nRaw request:\nURL: %s\nHeaders: %s\nData: %s\nRaw response: %s",
+					tostring(error_or_headers),
+					url,
+					vim.inspect(options.headers),
+					vim.fn.json_encode(options.data),
+					tostring(raw_response)
+				)
+			else
+				error_msg = string.format(
+					"Request failed: %s\nURL: %s\nHeaders: %s",
+					tostring(error_or_headers),
+					url,
+					vim.inspect(options.headers)
+				)
+			end
+		else
+			error_msg = string.format(
+				"Request failed: %s\nURL: %s\nHeaders: %s",
+				tostring(error_or_headers),
+				url,
+				vim.inspect(options.headers)
+			)
+		end
+		M.debug_log(error_msg, vim.log.levels.ERROR)
+		return nil, error_msg
+	end
+
+	-- Try to parse response to get more detailed error information
+	if response and type(response) == "string" then
+		local success, parsed = pcall(vim.fn.json_decode, response)
+		if success then
+			-- Log the entire response for debugging
+			M.debug_log("Full API Response: " .. vim.inspect(parsed))
+
+			-- Check for specific error details
+			if parsed.errorMessages then
+				local error_msg = "Jira API Error: " .. table.concat(parsed.errorMessages, "; ")
+				M.debug_log("API Error Messages: " .. error_msg)
+				return nil, error_msg
+			end
+
+			if parsed.errors then
+				local error_msgs = {}
+				for k, v in pairs(parsed.errors) do
+					table.insert(error_msgs, k .. ": " .. v)
+				end
+				local error_msg = "Jira API Errors: " .. table.concat(error_msgs, "; ")
+				M.debug_log("API Errors: " .. error_msg)
+				return nil, error_msg
+			end
+
+			return parsed
+		else
+			-- If JSON parsing fails, return raw response
+			return response
+		end
 	end
 
 	return response, error_or_headers
@@ -395,32 +652,34 @@ table.insert(M.server.capabilities.tools, {
 	},
 	handler = function(req, res)
 		M.debug_log("Creating new issue in project " .. req.params.project_key)
+		M.debug_log("Request params: " .. vim.inspect(req.params))
 
-		-- Build the issue data according to Jira API v3 format
+		-- Build the issue data according to Jira API v2 format
+		-- Convert description to text format
+		local description = req.params.description
+		if type(description) ~= "string" then
+			description = ""
+		end
+
 		local issue_data = {
 			fields = {
 				project = { key = req.params.project_key },
 				summary = req.params.summary,
-				description = {
-					type = "doc",
-					version = 1,
-					content = {
-						{
-							type = "paragraph",
-							content = {
-								{
-									type = "text",
-									text = req.params.description or "",
-								},
-							},
-						},
-					},
-				},
+				description = description,
 				issuetype = { name = req.params.issue_type or "Task" },
 			},
 		}
 
-		local result = make_jira_request("POST", "issue", issue_data)
+		M.debug_log("Issue data before request: " .. vim.inspect(issue_data))
+
+		local result, err = make_jira_request("POST", "issue", issue_data)
+		if err then
+			M.debug_log("Error creating issue: " .. tostring(err), vim.log.levels.ERROR)
+			return res:error(err)
+		end
+
+		M.debug_log("Create issue response: " .. vim.inspect(result))
+
 		-- Check if json method is available, otherwise fallback to text
 		if res.json then
 			return res:json(result):send()
@@ -442,10 +701,39 @@ table.insert(M.server.capabilities.tools, {
 				type = "string",
 				description = "JQL search query",
 			},
+			start_at = {
+				type = "number",
+				description = "Index of the first issue to return (0-based)",
+				default = 0,
+			},
 			max_results = {
 				type = "number",
-				description = "Maximum number of results to return",
+				description = "Maximum number of results to return (default: 50, max: 100)",
 				default = 50,
+			},
+			fields = {
+				type = "array",
+				items = {
+					type = "string",
+				},
+				description = "List of fields to return",
+				default = { "summary", "status", "priority", "issuetype", "created", "updated", "assignee", "reporter" },
+			},
+			validate_query = {
+				type = "boolean",
+				description = "Whether to validate the JQL query",
+				default = true,
+			},
+			-- Note: The fieldsByKeys parameter is documented in the Jira API docs but has been
+			-- removed here as it causes issues with some Jira instances despite being documented.
+			-- The API returns an error when this parameter is used.
+			expand = {
+				type = "array",
+				items = {
+					type = "string",
+				},
+				description = "A list of entities to expand in the response",
+				default = { "names", "schema" },
 			},
 		},
 		required = { "jql" },
@@ -453,15 +741,36 @@ table.insert(M.server.capabilities.tools, {
 	handler = function(req, res)
 		M.debug_log("Searching issues with JQL: " .. req.params.jql)
 
+		-- Ensure max_results stays within bounds (1-100)
+		local max_results = req.params.max_results or 50
+		max_results = math.min(math.max(1, max_results), 100)
+
 		local search_data = {
 			jql = req.params.jql,
-			maxResults = req.params.max_results or 50,
-			fields = { "summary", "description", "status", "priority", "issuetype" },
+			startAt = req.params.start_at or 0,
+			maxResults = max_results,
+			fields = req.params.fields or {
+				"summary",
+				"status",
+				"priority",
+				"issuetype",
+				"created",
+				"updated",
+				"assignee",
+				"reporter",
+			},
+			validateQuery = true,
+			expand = { "schema", "names" }, -- Force schema and names expansion for better error messages
 		}
 
-		local result = make_jira_request("POST", "search/jql", search_data)
-		-- Check if json method is available, otherwise fallback to text
+		local result, err = make_jira_request("POST", "search", search_data)
+		if err then
+			return res:error(err)
+		end
+
 		M.debug_log("search_issues response: " .. vim.inspect(result))
+
+		-- Check if json method is available, otherwise fallback to text
 		if res.json then
 			return res:json(result):send()
 		else
@@ -537,7 +846,7 @@ table.insert(M.server.capabilities.tools, {
 			},
 		}
 
-		local result = make_jira_request("POST", "search/jql", search_data)
+		local result = make_jira_request("POST", "search", search_data)
 		M.debug_log("list_project_issues response: " .. vim.inspect(result))
 
 		-- Check if json method is available, otherwise fallback to text
@@ -582,6 +891,25 @@ table.insert(M.server.capabilities.resourceTemplates, {
 		local result =
 			make_jira_request("GET", string.format("issue/%s?expand=renderedFields,names,schema", req.params.issue_key))
 		return res:json(result):send()
+	end,
+})
+
+-- Get server info
+table.insert(M.server.capabilities.tools, {
+	name = "get_server_info",
+	description = "Get Jira server information including version details",
+	inputSchema = {
+		type = "object",
+		properties = {},
+	},
+	handler = function(_, res)
+		M.debug_log("Getting server information")
+		local result = make_jira_request("GET", "serverInfo")
+		if res.json then
+			return res:json(result):send()
+		else
+			return res:text(vim.fn.json_encode(result)):send()
+		end
 	end,
 })
 

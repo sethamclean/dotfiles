@@ -6,7 +6,9 @@ M.debug_mode = false
 
 -- Debug logging function
 function M.debug_log(msg, level)
-	if msg == nil then return end
+	if msg == nil then
+		return
+	end
 	if not M.debug_mode then
 		return
 	end
@@ -34,9 +36,7 @@ function M.build_curl_command(method, url, options)
 		"--request",
 		method,
 		"--location",
-		"--silent",
-		"--show-error",
-		"--fail", -- Fail on HTTP errors
+		"--show-error", -- Show error messages
 		"--include", -- Include response headers
 		"--max-time",
 		(function()
@@ -47,7 +47,7 @@ function M.build_curl_command(method, url, options)
 				return tostring(timeout)
 			end
 			return "30" -- Default 30 second timeout
-		end)()
+		end)(),
 	}
 
 	-- Add headers if provided
@@ -115,14 +115,14 @@ function M.execute_curl_command(cmd)
 	-- Parse headers and status code first
 	local header_table = {}
 	local status_code = 200 -- Default to 200 if we can't find it
-	
+
 	if headers then
 		-- First parse status code from status line
 		local status_line = headers:match("^HTTP/%d+%.%d+ (%d+)")
 		if status_line then
 			status_code = tonumber(status_line) or 500 -- Default to 500 if parsing fails
 		end
-		
+
 		-- Then parse headers
 		for header in headers:gmatch("([^\r\n]+)") do
 			-- Skip status line
@@ -141,15 +141,15 @@ function M.execute_curl_command(cmd)
 		if result:match("Operation timed out") then
 			return nil, "Request timed out", header_table
 		end
-		
+
 		-- Log all non-timeout errors
 		M.debug_log(string.format("Curl failed with error %d: %s", vim.v.shell_error, result))
-		
+
 		-- For HTTP status errors (like 404, 500, etc)
 		if status_code >= 400 then
 			error(string.format("Request failed (status %d)", status_code), 0)
 		end
-		
+
 		-- For any other curl errors
 		error(string.format("Request failed: %s", result:gsub("\r?\n.*", "")), 0)
 	end
@@ -166,11 +166,22 @@ function M.execute_curl_command(cmd)
 		return {}, header_table -- Return empty table for empty string responses
 	end
 
+	-- Check content-type header for JSON
+	local content_type = header_table["content-type"] or ""
+	local is_json = content_type:match("application/json")
+
+	-- For non-JSON responses, return the raw content
+	if not is_json then
+		M.debug_log("Non-JSON response received")
+		return content, header_table
+	end
+
 	-- Try to decode JSON response
 	local ok, decoded = pcall(vim.fn.json_decode, content)
 	if not ok then
 		M.debug_log("Failed to decode JSON response: " .. content)
-		return { raw_content = content, data = content }, header_table
+		-- Even though content-type is JSON, if we can't parse it, return raw content
+		return content, header_table
 	end
 
 	return decoded, header_table
@@ -191,6 +202,21 @@ function M.make_request(method, url, options)
 
 	-- Build curl command
 	local cmd = M.build_curl_command(method, url, options)
+
+	-- If debug mode is enabled, write the curl command to a shell script
+	if M.debug_mode then
+		local debug_script = "debug_curl.sh"
+		local script_content = "#!/bin/bash\n\n" .. cmd .. "\n"
+		local file = io.open(debug_script, "w")
+		if file then
+			file:write(script_content)
+			file:close()
+			os.execute("chmod +x " .. debug_script)
+			M.debug_log("Wrote debug curl command to " .. debug_script)
+		else
+			M.debug_log("Failed to write debug curl script", vim.log.levels.WARN)
+		end
+	end
 
 	-- Execute command and process response
 	return M.execute_curl_command(cmd)
