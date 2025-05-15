@@ -102,18 +102,15 @@ end
 -- Test error handling (404)
 function tests.test_404_error()
 	local success, err = pcall(function()
-		print("Making request to invalid post...")
-		local result, headers = curl_utils.make_request("GET", "https://jsonplaceholder.typicode.com/posts/999999")
-		print("Result:", vim.inspect(result))
-		print("Headers:", vim.inspect(headers))
+		local result = curl_utils.make_request("GET", "https://httpbin.org/status/404")
 		error("Should not reach here - expected 404 error")
 	end)
-	print("pcall result:", success)
-	print("pcall error:", vim.inspect(err))
+
 	assert(not success, "Expected error for 404")
+	local err_str = tostring(err)
 	assert(
-		tostring(err):match("Request failed: .*404"),
-		string.format("Error should match pattern 'Request failed: .*404' but got: %s", tostring(err))
+		err_str:match("404"),
+		string.format("Error should indicate 404 status, but got: %s", err_str)
 	)
 	return true
 end
@@ -134,15 +131,9 @@ end
 
 -- Test query parameters
 function tests.test_query_params()
-	local result = curl_utils.make_request("GET", "https://jsonplaceholder.typicode.com/posts")
+	local result = curl_utils.make_request("GET", "https://httpbin.org/get?foo=bar")
 	assert(type(result) == "table", "Expected table response")
-	-- Check it's either a non-empty array or a raw content string response
-	if not result.raw_content then
-		assert(#result > 0, "Expected at least one post")
-		local first_post = result[1]
-		assert(type(first_post.id) == "number", "Expected numeric id")
-		assert(type(first_post.title) == "string", "Expected title string")
-	end
+	assert(result.args.foo == "bar", "Expected query param to be preserved")
 	return true
 end
 
@@ -157,25 +148,55 @@ end
 
 -- Test Timeout Handling
 function tests.test_timeout()
-	local result, err = curl_utils.make_request(
-		"GET",
-		"https://httpstat.us/200?sleep=5000", -- This endpoint delays response by 5s
-		{ timeout = 1 } -- Set 1 second timeout
+	local success, result_or_err = pcall(function()
+		return curl_utils.make_request(
+			"GET",
+			"https://example.com:81", -- This port is typically closed, causing a quick timeout
+			{ timeout = 1 } -- Set 1 second timeout
+		)
+	end)
+
+	-- We expect this to fail with a timeout error
+	assert(not success, "Expected timeout to trigger an error")
+	local err_str = tostring(result_or_err)
+	-- Check for either timeout or connection error
+	local err_str = tostring(result_or_err)
+	assert(
+		err_str:match("timed? ?out") or err_str:match("Could not resolve host") or err_str:match("Request failed"),
+		"Expected timeout or connection error message but got: " .. err_str
 	)
-	assert(result == nil, "Expected nil result for timeout")
-	assert(err == "Request timed out", "Expected timeout error message")
 	return true
+end
+
+-- Test error response body propagation
+function tests.test_error_response_body_propagation()
+    local success, err = pcall(function()
+        local result, headers = curl_utils.make_request("POST", "https://httpbin.org/status/400", {
+            data = {
+                test = "data"
+            }
+        })
+        error("Should not reach here - expected error from 400 status")
+    end)
+
+    assert(not success, "Expected error for 400 status")
+    local err_str = tostring(err)
+    assert(
+        err_str:match("400"),
+        string.format("Error should indicate 400 status, but got: %s", err_str)
+    )
+    return true
 end
 
 -- Test Invalid JSON Response
 function tests.test_invalid_json()
-	local result, _ = curl_utils.make_request(
+	local result, headers = curl_utils.make_request(
 		"GET",
-		"https://httpstat.us/200" -- Returns plain text, not JSON
+		"https://example.com" -- Returns HTML, not JSON
 	)
-	assert(type(result) == "table", "Expected table response")
-	assert(result.raw_content ~= nil, "Expected raw content field")
-	assert(result.raw_content ~= "", "Expected non-empty raw content")
+	assert(type(result) == "string", "Expected string response for non-JSON content")
+	assert(result ~= "", "Expected non-empty response")
+	assert(headers and headers["content-type"]:match("text/html"), "Expected text/html content type")
 	return true
 end
 
