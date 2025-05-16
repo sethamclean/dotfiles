@@ -3,82 +3,90 @@
 # Get the git directory of the current repository
 REPO_GIT_DIR=$(git rev-parse --git-dir)
 if [ $? -ne 0 ]; then
-    echo "Error: Not in a git repository"
-    exit 1
+  echo "Error: Not in a git repository"
+  exit 1
 fi
 
 # Get the repository root directory
 REPO_ROOT=$(git rev-parse --show-toplevel)
 if [ $? -ne 0 ]; then
-    echo "Error: Could not determine repository root"
-    exit 1
+  echo "Error: Could not determine repository root"
+  exit 1
+fi
+
+# Skip if this is running from a local hook
+if [ "$GIT_DIR" != "" ]; then
+  exit 0
 fi
 
 HOOKS_INSTALLED=false
 
 # Check for lefthook.yml
 if [ -f "${REPO_ROOT}/lefthook.yml" ]; then
-    # Check if lefthook is available
-    if ! command -v lefthook &> /dev/null; then
-        echo "Error: lefthook is not installed globally. Please install it with: go install github.com/evilmartians/lefthook@latest"
-        exit 1
+  # Check if lefthook is available
+  if ! command -v lefthook &>/dev/null; then
+    echo "Error: lefthook is not installed globally. Please install it with: go install github.com/evilmartians/lefthook@latest"
+    exit 1
+  fi
+
+  # Check if repository has a pre-commit hook
+  if [ ! -f "${REPO_GIT_DIR}/hooks/pre-commit" ]; then
+    echo "lefthook.yml found but hooks not installed, installing now..."
+
+    # Create hooks directory if it doesn't exist
+    mkdir -p "${REPO_GIT_DIR}/hooks"
+
+    # Install lefthook without replacing existing hooks
+    pushd "${REPO_ROOT}" >/dev/null
+    LEFTHOOK_QUIET=true lefthook install -f
+    INSTALL_RESULT=$?
+    popd >/dev/null
+
+    if [ $INSTALL_RESULT -ne 0 ]; then
+      echo "Error: Failed to install lefthook hooks"
+      exit 1
     fi
 
-    # Check if .git/hooks/pre-commit.local exists (this is created by lefthook)
-    if [ ! -f "${REPO_GIT_DIR}/hooks/pre-commit.local" ]; then
-        echo "lefthook.yml found but hooks not installed, installing now..."
+    echo "lefthook hooks installed successfully"
+  fi
 
-        # Run lefthook install for this repository
-        pushd "${REPO_ROOT}" > /dev/null
-        lefthook install
-        INSTALL_RESULT=$?
-        popd > /dev/null
-
-        if [ $INSTALL_RESULT -ne 0 ]; then
-            echo "Error: Failed to install lefthook hooks"
-            exit 1
-        fi
-
-        echo "lefthook hooks installed successfully"
-    fi
-
-    # Run lefthook pre-commit hooks
-    lefthook run pre-commit
-    HOOKS_INSTALLED=true
+  # Run lefthook pre-commit hooks
+  LEFTHOOK_QUIET=true lefthook run pre-commit
+  HOOKS_INSTALLED=true
 fi
 
 # Check for .pre-commit-config.yaml
 if [ -f "${REPO_ROOT}/.pre-commit-config.yaml" ]; then
-    # Check if pre-commit is available
-    if ! command -v pre-commit &> /dev/null; then
-        echo "Error: pre-commit is not installed globally. Please install it with: pip install pre-commit"
-        exit 1
+  # Check if pre-commit is available
+  if ! command -v pre-commit &>/dev/null; then
+    echo "Error: pre-commit is not installed globally. Please install it with: pip install pre-commit"
+    exit 1
+  fi
+
+  # Check if repository has a pre-commit hook
+  if [ ! -f "${REPO_GIT_DIR}/hooks/pre-commit" ]; then
+    echo ".pre-commit-config.yaml found but hooks not installed, installing now..."
+
+    # Install pre-commit hooks
+    pushd "${REPO_ROOT}" >/dev/null
+    pre-commit install --install-hooks
+    INSTALL_RESULT=$?
+    popd >/dev/null
+
+    if [ $INSTALL_RESULT -ne 0 ]; then
+      echo "Error: Failed to install pre-commit hooks"
+      exit 1
     fi
 
-    # Check if pre-commit hooks are installed
-    if ! pre-commit hook-impl --config="${REPO_ROOT}/.pre-commit-config.yaml" --hook-type=pre-commit --hook-dir="${REPO_ROOT}" 2>/dev/null; then
-        echo ".pre-commit-config.yaml found but hooks not installed, installing now..."
+    echo "pre-commit hooks installed successfully"
+  fi
 
-        # Install pre-commit hooks
-        pushd "${REPO_ROOT}" > /dev/null
-        pre-commit install --install-hooks
-        INSTALL_RESULT=$?
-        popd > /dev/null
-
-        if [ $INSTALL_RESULT -ne 0 ]; then
-            echo "Error: Failed to install pre-commit hooks"
-            exit 1
-        fi
-
-        echo "pre-commit hooks installed successfully"
-    fi
-
-    # Run pre-commit hooks
-    pre-commit run --config="${REPO_ROOT}/.pre-commit-config.yaml" --hook-stage=pre-commit
-    HOOKS_INSTALLED=true
+  # Run pre-commit hooks
+  pre-commit run --config="${REPO_ROOT}/.pre-commit-config.yaml" --hook-stage=pre-commit
+  HOOKS_INSTALLED=true
 fi
 
 if [ "$HOOKS_INSTALLED" = false ]; then
-    # No hook configurations found, just continue with the commit
-    exit 0
+  # No hook configurations found, just continue with the commit
+  exit 0
 fi
