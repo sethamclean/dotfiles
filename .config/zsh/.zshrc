@@ -219,22 +219,42 @@ export SEARXNG_API_URL="http://localhost:8080/search"
 # Quick Reference Documentation
 #------------------------------------------------------------------------------
 quickref() {
-  local query=$1
+  local edit_mode=0
+  local query=""
+  
+  # Parse arguments
+  while [[ $# -gt 0 ]]; do
+    case $1 in
+      -e|--edit)
+        edit_mode=1
+        shift
+        ;;
+      *)
+        query="$1"
+        shift
+        ;;
+    esac
+  done
+
   local ref_dir=~/Documents/obsidian-vault/main/quick-ref
   
   if [[ -d "$ref_dir" ]]; then
     if [[ -z "$query" ]]; then
-      # If no argument is provided, show all files with fzf
+      # If no search query is provided, show all files with fzf
       local selected_file=$(find "$ref_dir" -type f | fzf --preview 'bat -n --color=always {}')
-      [[ -n "$selected_file" ]] && bat --paging=always "$selected_file"
     else
-      # If argument is provided, use it as search term for fzf
+      # If search query is provided, use it as search term for fzf
       local selected_file=$(find "$ref_dir" -type f | fzf -q "$query" -1 --preview 'bat -n --color=always {}')
-      if [[ -n "$selected_file" ]]; then
-        bat --paging=always "$selected_file"
+    fi
+
+    if [[ -n "$selected_file" ]]; then
+      if [[ $edit_mode -eq 1 ]]; then
+        nvim "$selected_file"
       else
-        echo "No matching reference file found for: $query"
+        bat --paging=always "$selected_file"
       fi
+    elif [[ -n "$query" ]]; then
+      echo "No matching reference file found for: $query"
     fi
   else
     echo "Reference directory not found: $ref_dir"
