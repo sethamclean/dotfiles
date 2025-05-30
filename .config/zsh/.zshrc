@@ -261,3 +261,23 @@ quickref() {
     echo "Please create it and add your reference files."
   fi
 }
+#------------------------------------------------------------------------------
+# AWS Profile 
+#------------------------------------------------------------------------------
+# Source AWS profile from .env_aws_profile if it exists
+if [[ -f "$HOME/.env_aws_profile" ]]; then
+  source "$HOME/.env_aws_profile"
+fi
+
+#------------------------------------------------------------------------------
+# AWS Profile selector with fzf
+#------------------------------------------------------------------------------
+aws-profile() {
+  local profile=$(aws configure list-profiles | fzf --height 40% --layout=reverse --border)
+  if [[ -n "$profile" ]]; then
+    echo "export AWS_PROFILE=$profile" > "$HOME/.env_aws_profile"
+    source "$HOME/.env_aws_profile"
+    echo "AWS Profile set to: $profile and written to ~/.env_aws_profile"
+  fi
+}
+
