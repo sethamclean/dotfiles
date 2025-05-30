@@ -27,5 +27,6 @@ return {
 		vim.keymap.set("n", "<leader>fm", builtin.marks, { desc = "telescope find in marks." })
 		vim.keymap.set("n", "<leader>fj", builtin.jumplist, { desc = "telescope find in jumps." })
 		vim.keymap.set("n", "<leader>fp", builtin.man_pages, { desc = "telescope find in man pages." })
+		vim.keymap.set("n", "<leader>fr", builtin.oldfiles, { desc = "telescope find recent(old) files." })
 	end,
 }
