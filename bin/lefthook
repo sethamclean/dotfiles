@@ -1,0 +1,9 @@
+#!/bin/bash
+# Wrapper for lefthook to prevent accidental 'install' command
+if [[ "$1" == "install" ]]; then
+  echo "WARNING: 'lefthook install' is disabled to protect your global git hook setup."
+  echo "Hooks are managed globally. Do not run 'lefthook install'."
+  exit 1
+fi
+# Forward all other commands to the real lefthook
+command /root/.nix-profile/bin/lefthook "$@"
