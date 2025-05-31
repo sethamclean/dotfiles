@@ -10,4 +10,4 @@ if [ -f "${HOME}/.profile" ] && [ ! -L "${HOME}/.profile" ]; then
   mv "${HOME}/.profile" "${backup_file}"
 fi
 
-stow ${flags} --no-folding --ignore=.git --target=${HOME} .
+stow "${flags}" --no-folding --target="${HOME}" .
