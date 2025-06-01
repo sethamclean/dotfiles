@@ -3,6 +3,9 @@ require("seth.lazy")
 
 -- rendering
 vim.opt.conceallevel = 2
+
+-- Use system clipboard for all yanks (optional, but recommended for OSC52)
+vim.opt.clipboard = "unnamedplus"
 vim.opt.laststatus = 3
 
 -- Tab settings
