@@ -167,7 +167,19 @@ fi
 #------------------------------------------------------------------------------
 # Auto start tmux
 #------------------------------------------------------------------------------
-if [ "$TMUX" = "" ]; then tmux new-session -A -s main; fi
+# Improved tmux auto-start logic for tmux-continuum compatibility
+if [ -z "$TMUX" ] && [ -z "$TMUX_RESURRECT_RESTORE" ]; then
+  echo "Waiting for tmux restore (up to 5s)..."
+  for i in {1..10}; do
+    tmux has-session 2>/dev/null && break
+    sleep 0.5
+  done
+  if tmux ls &>/dev/null; then
+    tmux attach
+  else
+    tmux new-session -s main
+  fi
+fi
 
 #------------------------------------------------------------------------------
 #`Zoxide`settings
