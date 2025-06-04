@@ -169,12 +169,21 @@ fi
 #------------------------------------------------------------------------------
 # Improved tmux auto-start logic for tmux-continuum compatibility
 if [ -z "$TMUX" ] && [ -z "$TMUX_RESURRECT_RESTORE" ]; then
-  echo "Waiting for tmux restore (up to 5s)..."
+  waited=0
   for i in {1..10}; do
-    tmux has-session 2>/dev/null && break
+    if tmux has-session 2>/dev/null; then
+      break
+    fi
+    if [ $i -eq 1 ]; then
+      echo "Waiting for tmux restore (up to 5s)..." >&2
+    fi
+    waited=1
     sleep 0.5
   done
-  if tmux ls &>/dev/null; then
+  if [ $waited -eq 1 ]; then
+    sleep 0.5  # Give user a moment to see the message
+  fi
+  if tmux has-session 2>/dev/null; then
     tmux attach
   else
     tmux new-session -s main
