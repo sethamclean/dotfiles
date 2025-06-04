@@ -10,13 +10,18 @@ return {
 	-- build = "bundled_build.lua",  -- Use this and set use_bundled_binary = true in opts  (see Advanced configuration)
 	config = function()
 		require("mcphub").setup({
-			extensions = {
-				avante = {
-					make_slash_commands = true, -- make /slash commands from MCP server prompts
+			integrations = {
+				codecompanion = {
+					enabled = true, -- Enable Code Companion integration
 				},
 			},
+			--extensions = {
+			--	avante = {
+			--		make_slash_commands = true, -- make /slash commands from MCP server prompts
+			--	},
+			--},
 		})
-		
+
 		-- Initialize native MCP servers after setup
 		require("seth.mcp").setup()
 	end,

@@ -17,7 +17,7 @@
         "mcp-searxng@0.4.6"
       ],
       "name": "searxng",
-      "disabled": true,
+      "disabled": false,
       "env": {
         "SEARXNG_URL": "http://host.docker.internal:8080"
       },
