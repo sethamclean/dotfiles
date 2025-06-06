@@ -6,6 +6,7 @@ return {
 		"nvim-treesitter/nvim-treesitter",
 		"ravitemer/mcphub.nvim",
 		"ravitemer/codecompanion-history.nvim",
+		"folke/noice.nvim",
 	},
 	config = function()
 		require("codecompanion").setup({
@@ -53,5 +54,6 @@ return {
 			},
 		})
 		vim.keymap.set("n", "<leader>ca", "<cmd>CodeCompanionActions<cr>", { desc = "CodeCompanion Action Palette" })
+		require("seth.ui.companion-notification").init()
 	end,
 }
