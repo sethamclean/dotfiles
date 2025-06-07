@@ -1,7 +1,17 @@
 {
+  "nativeMCPServers": {
+    "neovim": {
+      "disabled": false
+    },
+    "jira": {
+      "disabled": false
+    },
+    "obsidian": {
+      "disabled": true
+    }
+  },
   "mcpServers": {
     "github": {
-      "disabled": false,
       "disabled_tools": [
         "add_issue_comment",
         "add_pull_request_review_comment",
@@ -18,10 +28,8 @@
         "update_pull_request",
         "update_pull_request_branch"
       ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
       "command": "docker",
+      "disabled": false,
       "args": [
         "run",
         "-i",
@@ -31,26 +39,18 @@
         "-e",
         "GITHUB_PERSONAL_ACCESS_TOKEN",
         "ghcr.io/github/github-mcp-server"
-      ]
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
     },
     "searxng": {
-      "disabled": false,
       "command": "uvx",
+      "name": "searxng",
       "env": {
         "SEARXNG_API_URL": null
       },
-      "name": "pysearxng",
-      "args": ["/workspaces/search-mcp/"]
-    }
-  },
-  "nativeMCPServers": {
-    "neovim": {
-      "disabled": false
-    },
-    "obsidian": {
-      "disabled": true
-    },
-    "jira": {
+      "args": ["git+https://github.com/sethamclean/search-mcp/"],
       "disabled": false
     }
   }
