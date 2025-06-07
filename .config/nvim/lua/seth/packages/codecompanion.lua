@@ -62,7 +62,31 @@ return {
 				},
 			},
 		})
+		-- Keymaps
 		vim.keymap.set("n", "<leader>ca", "<cmd>CodeCompanionActions<cr>", { desc = "CodeCompanion Action Palette" })
+		-- Notifications on companion events
 		require("seth.ui.companion-notification").init()
+		-- Set up the chat buffer with default tools
+		vim.api.nvim_create_autocmd("User", {
+			pattern = "CodeCompanionChatCreated",
+			group = group,
+			callback = function(event)
+				local lines = vim.api.nvim_buf_get_lines(event.buf, 0, -1, false)
+				local insert_pos = nil
+				for i, line in ipairs(lines) do
+					if line:match("^## Me") then
+						insert_pos = i
+						break
+					end
+				end
+				if insert_pos then
+					vim.api.nvim_buf_set_lines(event.buf, insert_pos, insert_pos, false, {
+						"",
+						"@full_stack_dev @mcp",
+						"",
+					})
+				end
+			end,
+		})
 	end,
 }
