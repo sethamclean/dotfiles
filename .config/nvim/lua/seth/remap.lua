@@ -1,8 +1,23 @@
 vim.g.mapleader = " "
 vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
 
--- Execute visually selected text and show output in horizontal split
+-- Execute visually selected text and write output to the current buffer
 vim.keymap.set("v", "<leader>x", function()
+	-- Save current mode and exit visual
+	local mode = vim.fn.mode()
+	vim.cmd('normal! gv"xy') -- yank selection to register x
+	local command = vim.fn.getreg("x")
+	-- Run command in zsh
+	local output = vim.fn.systemlist("zsh -c " .. vim.fn.shellescape(command))
+	-- Get selection range (after yanking, '< and '> are correct)
+	local start_line = vim.fn.line("'<")
+	local end_line = vim.fn.line("'>")
+	-- Insert output below selection
+	vim.api.nvim_buf_set_lines(0, end_line, end_line, false, output)
+end, { desc = "Execute selection in shell and insert output below", noremap = true })
+
+-- Execute visually selected text and show output in horizontal split
+vim.keymap.set("v", "<leader>X", function()
 	-- Get the selected text
 	local start_pos = vim.fn.getpos("'<")
 	local end_pos = vim.fn.getpos("'>")
@@ -32,7 +47,7 @@ vim.keymap.set("v", "<leader>x", function()
 	end)
 
 	if not success then
-		output = {"Error executing command:", tostring(output)}
+		output = { "Error executing command:", tostring(output) }
 	end
 
 	-- Combine debug info with output
