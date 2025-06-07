@@ -10,6 +10,15 @@ return {
 	},
 	config = function()
 		require("codecompanion").setup({
+			display = {
+				chat = {
+					show_settings = true, -- Show settings in chat buffer
+					show_model = true, -- Show model name in chat buffer
+					show_adapter = true, -- Show adapter name in chat buffer
+					show_time = true, -- Show time in chat buffer
+					show_title = true, -- Show title in chat buffer
+				},
+			},
 			extensions = {
 				mcphub = {
 					callback = "mcphub.extensions.codecompanion",
