@@ -1,17 +1,46 @@
 {
-  "nativeMCPServers": {
-    "neovim": {
-      "disabled": false
-    },
-    "jira": {
-      "disabled": false
-    },
-    "obsidian": {
-      "disabled": true
-    }
-  },
   "mcpServers": {
+    "context7": {
+      "args": [
+        "run",
+        "-i",
+        "--name",
+        "context7-mcp",
+        "--rm",
+        "node:22-alpine",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "name": "context7",
+      "disabled": false,
+      "command": "docker"
+    },
+    "searxng": {
+      "name": "searxng",
+      "env": {
+        "SEARXNG_API_URL": null
+      },
+      "args": [
+        "git+https://github.com/sethamclean/search-mcp/"
+      ],
+      "disabled": false,
+      "command": "uvx"
+    },
     "github": {
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "args": [
+        "run",
+        "-i",
+        "--name",
+        "github-mcp-server",
+        "--rm",
+        "-e",
+        "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
       "disabled_tools": [
         "add_issue_comment",
         "add_pull_request_review_comment",
@@ -28,31 +57,25 @@
         "update_pull_request",
         "update_pull_request_branch"
       ],
-      "command": "docker",
       "disabled": false,
-      "args": [
-        "run",
-        "-i",
-        "--name",
-        "github-mcp-server",
-        "--rm",
-        "-e",
-        "GITHUB_PERSONAL_ACCESS_TOKEN",
-        "ghcr.io/github/github-mcp-server"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "${MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
-      }
+      "command": "docker"
     },
-    "searxng": {
-      "command": "uvx",
-      "name": "searxng",
+    "jira": {
+      "name": "jira",
       "env": {
-        "SEARXNG_API_URL": null
+        "JIRA_DOMAIN": "jira.idexx.com",
+        "JIRA_TOKEN": null
       },
-      "args": ["git+https://github.com/sethamclean/search-mcp/"],
-      "disabled": false
+      "args": [
+        "/workspaces/jira-mcp/"
+      ],
+      "disabled": false,
+      "command": "uvx"
+    }
+  },
+  "nativeMCPServers": {
+    "obsidian": {
+      "disabled": true
     }
   }
 }
-

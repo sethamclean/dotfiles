@@ -167,22 +167,8 @@ fi
 #------------------------------------------------------------------------------
 # Auto start tmux
 #------------------------------------------------------------------------------
-# Improved tmux auto-start logic for tmux-continuum compatibility
+# Simple tmux auto-start: attach if session exists, otherwise create
 if [ -z "$TMUX" ] && [ -z "$TMUX_RESURRECT_RESTORE" ]; then
-  waited=0
-  for i in {1..10}; do
-    if tmux has-session 2>/dev/null; then
-      break
-    fi
-    if [ $i -eq 1 ]; then
-      echo "Waiting for tmux restore (up to 5s)..." >&2
-    fi
-    waited=1
-    sleep 0.5
-  done
-  if [ $waited -eq 1 ]; then
-    sleep 0.5  # Give user a moment to see the message
-  fi
   if tmux has-session 2>/dev/null; then
     tmux attach
   else
@@ -302,3 +288,7 @@ aws-profile() {
   fi
 }
 
+#------------------------------------------------------------------------------
+# Vectorcode configuration
+#------------------------------------------------------------------------------
+export VECTOR_DB_URI="chromadb://localhost:8000"

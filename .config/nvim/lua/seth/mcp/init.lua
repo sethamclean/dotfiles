@@ -19,7 +19,7 @@ M.server_modules = {
 	terraform_cloud = "seth.mcp.terraform_cloud",
 	knowledge_base = "seth.mcp.knowledge_base",
 	code2prompt = "seth.mcp.code2prompt",
-	jira = "seth.mcp.jira",
+	-- jira = "seth.mcp.jira",
 	-- Add new server modules here
 }
 

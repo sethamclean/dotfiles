@@ -1,5 +1,6 @@
 return {
 	"olimorris/codecompanion.nvim",
+	version = "v16.1.0",
 	opts = {},
 	dependencies = {
 		"nvim-lua/plenary.nvim",
@@ -27,6 +28,11 @@ return {
 						-- show_result_in_chat = true, -- Show mcp tool results in chat
 						make_vars = true, -- Convert resources to #variables
 						make_slash_commands = true, -- Add prompts as /slash commands
+					},
+				},
+				vectorcode = {
+					opts = {
+						add_tool = true,
 					},
 				},
 				history = {
@@ -82,7 +88,7 @@ return {
 				if insert_pos then
 					vim.api.nvim_buf_set_lines(event.buf, insert_pos, insert_pos, false, {
 						"",
-						"@full_stack_dev @mcp",
+						"@full_stack_dev @mcp @vectorcode",
 						"",
 					})
 				end
