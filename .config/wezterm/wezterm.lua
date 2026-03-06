@@ -4,6 +4,8 @@ local wezterm = require("wezterm")
 -- --- Main WezTerm Configuration ---
 local config = wezterm.config_builder()
 
+-- Disable WezTerm's SSH agent mux only on Windows
+
 config.ssh_domains = {
 	{
 		name = "active-codespace",
@@ -12,7 +14,7 @@ config.ssh_domains = {
 }
 
 config.color_scheme = "Tokyo Night"
--- config.exit_behavior = "Hold"
+config.exit_behavior = "Hold"
 
 -- Slightly transparent and blurred background
 config.window_background_opacity = 0.9
@@ -32,7 +34,7 @@ tmux.apply_to_config(config, {})
 
 config.notification_handling = "AlwaysShow"
 
-if not os.getenv("WEZTERM_EXECUTABLE") then
+if wezterm.gui then
 	-- Function to get the full, platform-specific path to an executable.
 	-- It attempts to find the executable using system-specific commands ('where' on Windows,
 	-- 'command -v' on Unix-like systems).
@@ -71,13 +73,11 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 		wezterm.log_info("is_linux: " .. tostring(is_linux))
 
 		local command_to_find
-		local actual_executable_name = executable_name
-
 		if is_windows then
-			actual_executable_name = executable_name .. ".exe" -- Explicitly add .exe on Windows
-			command_to_find = "where " .. actual_executable_name
+			command_to_find = "where " .. executable_name
 		elseif is_macos then
 			-- On macOS, Homebrew is common. Try Homebrew's default paths first.
+			local actual_executable_name = executable_name
 			if target_triple:find("aarch64", 1, true) then
 				local explicit_path = "/opt/homebrew/bin/" .. actual_executable_name
 				local f = io.open(explicit_path, "r")
@@ -101,7 +101,7 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 			end
 			command_to_find = "command -v " .. actual_executable_name
 		elseif is_linux then
-			command_to_find = "command -v " .. actual_executable_name
+			command_to_find = "command -v " .. executable_name
 		else
 			wezterm.log_warn(
 				"Unsupported OS detected: " .. target_triple .. ". Cannot reliably find " .. executable_name .. " path."
@@ -124,18 +124,26 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 			"Command '" .. command_to_find .. "' output: [" .. output .. "], Exit Code: " .. tostring(exit_code)
 		)
 
-		if exit_code == 0 and output ~= "" then
+		if (exit_code == 0 or exit_code == true) and output ~= "" then
 			return output
 		else
-			wezterm.log_warn(
-				"Could not find '" .. actual_executable_name .. "' in PATH or command failed. Output: " .. output
-			)
+			wezterm.log_warn("Could not find '" .. executable_name .. "' in PATH or command failed. Output: " .. output)
 			return nil
 		end
 	end
 
+	local function get_ssh_config_path()
+		if package.config:sub(1, 1) == "\\" then
+			return wezterm.home_dir .. "\\.ssh\\config"
+		else
+			return wezterm.home_dir .. "/.ssh/config"
+		end
+	end
+
 	local function update_ssh_config_with_alias(config_block, alias)
-		local ssh_config_path = wezterm.home_dir .. "/.ssh/config"
+		wezterm.log_info("Writing SSH config block for alias: " .. alias)
+		wezterm.log_info("SSH config block:\n" .. config_block)
+		local ssh_config_path = get_ssh_config_path()
 		local config_file = io.open(ssh_config_path, "r")
 		local existing = config_file and config_file:read("*a") or ""
 		if config_file then
@@ -154,6 +162,13 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 		local out = io.open(ssh_config_path, "w")
 		out:write(new_config)
 		out:close()
+		-- Log the resulting SSH config file
+		local verify_file = io.open(ssh_config_path, "r")
+		if verify_file then
+			local verify_contents = verify_file:read("*a")
+			wezterm.log_info("Full SSH config after update:\n" .. verify_contents)
+			verify_file:close()
+		end
 	end
 
 	local function connect_to_codespace(window, pane, codespace_name, gh_cli_path, wezterm_cli_path)
@@ -169,7 +184,9 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 			end
 		end
 		-- 1. Run 'pwd' over SSH (as a test/initial connection)
-		local pwd_command = gh_cli_path
+		local pwd_command = '"'
+			.. gh_cli_path
+			.. '"'
 			.. " codespace ssh -c "
 			.. wezterm.shell_quote_arg(codespace_name)
 			.. " pwd > "
@@ -202,7 +219,9 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 			return
 		end
 		-- 2. Get SSH config block and rewrite Host
-		local config_command = gh_cli_path
+		local config_command = '"'
+			.. gh_cli_path
+			.. '"'
 			.. " codespace ssh -c "
 			.. wezterm.shell_quote_arg(codespace_name)
 			.. " --config"
@@ -220,26 +239,12 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 		-- Replace Host line
 		local modified_block = config_output:gsub("Host%s+[%w%-%._]+", "Host active-codespace", 1)
 		update_ssh_config_with_alias(modified_block, "active-codespace")
-		-- 3. Start WezTerm connecting to the codespace using the static alias domain
-		wezterm.log_info("Attempting to connect via 'wezterm start --domain active-codespace' for a new SSH session.")
-		local spawn_command = { wezterm_cli_path, "start", "--domain", "active-codespace" }
-		local env_vars = {
-			PATH = homebrew_bin_path .. ":" .. os.getenv("PATH"),
-		}
-		wezterm.log_info("Setting PATH for spawned 'wezterm start --domain active-codespace': " .. env_vars.PATH)
-		wezterm.log_info("Spawning new tab with command: " .. table.concat(spawn_command, " "))
-		window:perform_action(
-			wezterm.action.SpawnCommandInNewTab({
-				args = spawn_command,
-				cwd = wezterm.home_dir,
-				label = "Codespace (SSH Session): active-codespace",
-				set_environment_variables = env_vars,
-			}),
-			pane
-		)
-		local success_msg = "Connected to codespace as 'active-codespace' (via new SSH session)!"
+		-- Instead of spawning a new terminal, notify the user that the codespace config is set up
+		local success_msg = "SSH config for codespace '"
+			.. codespace_name
+			.. "' is set up! Switch to the 'active-codespace' domain manually to connect."
 		wezterm.log_info(success_msg)
-		window:toast_notification("Codespace", success_msg, nil, 4000)
+		window:toast_notification("Codespace", success_msg, nil, 5000)
 	end
 
 	local gh_cli_path = get_executable_path("gh")
@@ -252,7 +257,7 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 		-- Define the action to list and connect to codespaces
 		local function list_and_connect_codespaces(window, pane)
 			wezterm.log_info("Attempting to list codespaces...")
-			local list_command = gh_cli_path .. " codespace list --json name 2>&1"
+			local list_command = '"' .. gh_cli_path .. '" codespace list --json name 2>&1'
 			local list_handle = io.popen(list_command)
 			if not list_handle then
 				local error_msg = "Failed to run gh codespace list (pipe open failed)."
@@ -324,13 +329,17 @@ if not os.getenv("WEZTERM_EXECUTABLE") then
 			end
 		end
 
-		config.keys = {
-			{
-				key = "G",
-				mods = "CTRL|SHIFT",
-				action = wezterm.action_callback(list_and_connect_codespaces),
-			},
-		}
+		config.keys = config.keys or {}
+		table.insert(config.keys, {
+			key = "G",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action_callback(list_and_connect_codespaces),
+		})
+		table.insert(config.keys, {
+			key = "D",
+			mods = "CTRL|SHIFT",
+			action = wezterm.action.ShowLauncher,
+		})
 	else
 		local error_msg =
 			"GitHub CLI (gh) and/or WezTerm CLI not found or could not be located. Codespace features will be unavailable."
