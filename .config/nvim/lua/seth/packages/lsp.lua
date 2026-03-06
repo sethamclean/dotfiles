@@ -30,7 +30,7 @@ return {
 					"yamlls",
 					"ruff",
 					"pyrefly",
-          "pyright"
+					"pyright",
 				},
 				handlers = {
 					function(server_name)
@@ -103,6 +103,31 @@ return {
 								gopls = {
 									buildFlags = { "-tags=integration" },
 									gofumpt = true,
+								},
+							},
+						})
+					end,
+					["yamlls"] = function()
+						require("lspconfig").yamlls.setup({
+							settings = {
+								yaml = {
+									format = {
+										enable = true,
+										singleQuote = true,
+										printWidth = 120,
+									},
+									hover = true,
+									completion = true,
+									validate = true,
+									schemas = {
+										["https://raw.githubusercontent.com/helm/charts/master/values.schema.json"] = "/*.yaml",
+										["https://json.schemastore.org/github-workflow.json"] = ".github/workflows/*.{yml,yaml}",
+										["https://json.schemastore.org/kustomization.json"] = "kustomization.yaml",
+									},
+									schemaStore = {
+										enable = true,
+										url = "https://www.schemastore.org/json",
+									},
 								},
 							},
 						})

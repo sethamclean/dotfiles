@@ -13,7 +13,7 @@
 	hooksPath = ~/.config/git/hooks
 
 [push]
-	default = simple
+	default = current
 	followTags = true
 	autoSetupRemote = true
 
@@ -34,6 +34,9 @@
 
 [url "git@github.com:example-team/"]
 	insteadOf = "is:"
+
+[url "git@github.com:example-org/"]
+  insteadof = "idx:"
 
 [credential "https://github.com"]
 	helper = !gh auth git-credential

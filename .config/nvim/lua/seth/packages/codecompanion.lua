@@ -11,6 +11,15 @@ return {
 	},
 	config = function()
 		require("codecompanion").setup({
+			strategies = {
+				chat = {
+					adapter = {
+						name = "copilot",
+						-- model = "claude-3.7-sonnet",
+						model = "gpt-4.1",
+					},
+				},
+			},
 			display = {
 				chat = {
 					show_settings = true, -- Show settings in chat buffer
@@ -88,7 +97,7 @@ return {
 				if insert_pos then
 					vim.api.nvim_buf_set_lines(event.buf, insert_pos, insert_pos, false, {
 						"",
-						"@full_stack_dev @mcp @vectorcode",
+						"@full_stack_dev @mcp",
 						"",
 					})
 				end
