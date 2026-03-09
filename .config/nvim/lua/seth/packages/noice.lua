@@ -3,6 +3,7 @@ return {
 	event = "VeryLazy",
 	config = function()
 		require("noice").setup({
+			notify = { enabled = false },
 			routes = {
 				{
 					view = "mini",
