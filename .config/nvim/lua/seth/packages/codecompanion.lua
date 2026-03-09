@@ -1,11 +1,10 @@
 return {
 	"olimorris/codecompanion.nvim",
-	version = "v16.1.0",
+	version = "v19.2.0",
 	opts = {},
 	dependencies = {
 		"nvim-lua/plenary.nvim",
 		"nvim-treesitter/nvim-treesitter",
-		"ravitemer/mcphub.nvim",
 		"ravitemer/codecompanion-history.nvim",
 		"folke/noice.nvim",
 	},
@@ -30,20 +29,6 @@ return {
 				},
 			},
 			extensions = {
-				mcphub = {
-					callback = "mcphub.extensions.codecompanion",
-					opts = {
-						-- Disabled this because SearXNG produces a lot of output
-						-- show_result_in_chat = true, -- Show mcp tool results in chat
-						make_vars = true, -- Convert resources to #variables
-						make_slash_commands = true, -- Add prompts as /slash commands
-					},
-				},
-				vectorcode = {
-					opts = {
-						add_tool = true,
-					},
-				},
 				history = {
 					enabled = true,
 					opts = {

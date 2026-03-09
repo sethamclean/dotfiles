@@ -4,8 +4,8 @@ return {
 		require("notify").setup({
 			render = "compact",
 			stages = "slide",
-			timeout = 800,
-			max_width = 40,
+			timeout = 8000,
+			max_width = 4000,
 			max_height = 3,
 			top_down = false,
 			fps = 30,
