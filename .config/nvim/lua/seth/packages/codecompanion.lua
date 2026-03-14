@@ -1,7 +1,6 @@
 return {
 	"olimorris/codecompanion.nvim",
-	version = "v19.2.0",
-	opts = {},
+	version = "v19.3.0",
 	dependencies = {
 		"nvim-lua/plenary.nvim",
 		"nvim-treesitter/nvim-treesitter",
@@ -10,15 +9,6 @@ return {
 	},
 	config = function()
 		require("codecompanion").setup({
-			strategies = {
-				chat = {
-					adapter = {
-						name = "copilot",
-						-- model = "claude-3.7-sonnet",
-						model = "gpt-4.1",
-					},
-				},
-			},
 			display = {
 				chat = {
 					show_settings = true, -- Show settings in chat buffer
@@ -26,6 +16,21 @@ return {
 					show_adapter = true, -- Show adapter name in chat buffer
 					show_time = true, -- Show time in chat buffer
 					show_title = true, -- Show title in chat buffer
+				},
+			},
+			interactions = {
+				chat = {
+					adapter = {
+						name = "copilot",
+						model = "gpt-5.2-codex",
+					},
+					tools = {
+						opts = {
+							default_tools = {
+								"agent",
+							},
+						},
+					},
 				},
 			},
 			extensions = {
@@ -67,26 +72,5 @@ return {
 		-- Notifications on companion events
 		require("seth.ui.companion-notification").init()
 		-- Set up the chat buffer with default tools
-		vim.api.nvim_create_autocmd("User", {
-			pattern = "CodeCompanionChatCreated",
-			group = group,
-			callback = function(event)
-				local lines = vim.api.nvim_buf_get_lines(event.buf, 0, -1, false)
-				local insert_pos = nil
-				for i, line in ipairs(lines) do
-					if line:match("^## Me") then
-						insert_pos = i
-						break
-					end
-				end
-				if insert_pos then
-					vim.api.nvim_buf_set_lines(event.buf, insert_pos, insert_pos, false, {
-						"",
-						"@full_stack_dev @mcp",
-						"",
-					})
-				end
-			end,
-		})
 	end,
 }
