@@ -156,15 +156,6 @@ alias lst='exa -aTlo --git-ignore --time-style=iso --no-filesize --no-permission
 unset GITHUB_TOKEN
 
 #------------------------------------------------------------------------------
-# Install GitHub CLI plugins
-#------------------------------------------------------------------------------
-if [ -x "$(which gh)" ]; then
-    if ! gh extension list | grep -q "github/gh-copilot"; then
-        gh extension install github/gh-copilot
-    fi
-fi
-
-#------------------------------------------------------------------------------
 # Auto start tmux
 #------------------------------------------------------------------------------
 # Simple tmux auto-start: attach if session exists, otherwise create
