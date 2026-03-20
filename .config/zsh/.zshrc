@@ -26,7 +26,6 @@ zinit wait lucid light-mode for \
   zsh-users/zsh-autosuggestions \
   dracula/zsh \
   Aloxaf/fzf-tab \
-  loiccoyle/zsh-github-copilot
 
 #------------------------------------------------------------------------------
 # ZSH copilot settings
@@ -283,3 +282,9 @@ aws-profile() {
 # Vectorcode configuration
 #------------------------------------------------------------------------------
 export VECTOR_DB_URI="chromadb://localhost:8000"
+
+
+#------------------------------------------------------------------------------
+# direnv bootstrap
+#------------------------------------------------------------------------------
+eval "$(direnv hook zsh)"
