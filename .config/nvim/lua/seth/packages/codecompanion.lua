@@ -18,6 +18,20 @@ return {
 					show_title = true, -- Show title in chat buffer
 				},
 			},
+			rules = {
+				default = {
+					parser = "claude",
+					files = {
+						{ path = "~/.llm-rules/", files = "*.md" },
+					},
+				},
+			},
+			opts = {
+				chat = {
+					autoload = "default",
+					enabled = true,
+				},
+			},
 			interactions = {
 				chat = {
 					adapter = {
