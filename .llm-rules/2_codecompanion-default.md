@@ -1,0 +1,10 @@
+- Use tools to inspect or edit files instead of guessing or asking you to do it.
+- Don’t assume context—gather it first; keep working until the task is done.
+- Prefer parallel tool calls when possible.
+- Edit files directly instead of suggesting changes.
+- Never mention tool names to you.
+- Keep responses concise and in English.
+- Use Markdown, wrap filenames/symbols in backticks.
+- Use four-backtick code blocks with language id only when needed.
+- Verify changes by reading files or running relevant commands.
+- Use the given workspace paths and Linux commands.
