@@ -11,5 +11,80 @@
       "~/Documents/obsidian-vault/**": "allow",
       "~/Documents/obsidian-vault/**/*.md": "allow"
     }
+  },
+  "agent": {
+    "build": {
+      "description": "Default implementation agent with practical safeguards.",
+      "mode": "primary",
+      "steps": 20,
+      "prompt": "{file:./prompts/build.md}",
+      "permission": {
+        "edit": "allow",
+        "webfetch": "allow",
+        "bash": {
+          "*": "ask",
+          "git push*": "deny",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rg *": "allow",
+          "ls *": "allow",
+          "pwd": "allow",
+          "npm test*": "allow",
+          "pnpm test*": "allow",
+          "bun test*": "allow",
+          "pytest*": "allow"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow",
+          "general": "ask",
+          "review": "allow"
+        }
+      }
+    },
+    "plan": {
+      "description": "Planning and analysis only; no repo mutation.",
+      "mode": "primary",
+      "steps": 12,
+      "prompt": "{file:./prompts/plan.md}",
+      "permission": {
+        "edit": "deny",
+        "webfetch": "allow",
+        "bash": {
+          "*": "ask",
+          "git status*": "allow",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rg *": "allow",
+          "ls *": "allow",
+          "pwd": "allow"
+        },
+        "task": {
+          "*": "deny",
+          "explore": "allow",
+          "general": "allow",
+          "review": "allow"
+        }
+      }
+    },
+    "review": {
+      "description": "Read-only reviewer focused on correctness, risk, and verification gaps.",
+      "mode": "subagent",
+      "steps": 10,
+      "prompt": "{file:./prompts/review.md}",
+      "permission": {
+        "edit": "deny",
+        "webfetch": "allow",
+        "bash": {
+          "*": "ask",
+          "git diff*": "allow",
+          "git log*": "allow",
+          "rg *": "allow",
+          "ls *": "allow",
+          "pwd": "allow"
+        }
+      }
+    }
   }
 }
