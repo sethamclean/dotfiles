@@ -22,7 +22,7 @@ return {
 				default = {
 					parser = "claude",
 					files = {
-						{ path = "~/.llm-rules/", files = "*.md" },
+						{ path = "~/config/opencode/", files = "*.md" },
 					},
 				},
 			},
