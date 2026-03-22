@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "~/.llm-rules/**/*.md",
+    "~/Documents/obsidian-vault/**/*.md"
+  ],
+  "permission": {
+    "read": {
+      "~/.llm-rules/**": "allow",
+      "~/.llm-rules/**/*.md": "allow",
+      "~/Documents/obsidian-vault/**": "allow",
+      "~/Documents/obsidian-vault/**/*.md": "allow"
+    }
+  }
+}

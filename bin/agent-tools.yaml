@@ -1,0 +1,28 @@
+tools:
+  - name: agent-ci-status-head
+    description: Show GitHub Actions status for a commit ref and optionally fetch troubleshooting logs.
+    use_when:
+      - Need CI status for the HEAD commit or specific ref.
+      - Need failed run logs for troubleshooting.
+    args:
+      - name: repo
+        required: false
+        description: GitHub repository in owner/repo format. Defaults to current repository.
+      - name: ref
+        required: false
+        description: Git ref or commit SHA. Defaults to HEAD.
+      - name: log_mode
+        required: false
+        description: none, failed, or all. Defaults to failed.
+    env:
+      - name: MAX_LOG_RUNS
+        required: false
+        description: Maximum number of runs to fetch logs for. Defaults to 3.
+    safety:
+      mode: read-only
+      side_effects: none
+    examples:
+      - agent-ci-status-head
+      - agent-ci-status-head myorg/myrepo
+      - agent-ci-status-head myorg/myrepo HEAD failed
+      - MAX_LOG_RUNS=1 agent-ci-status-head myorg/myrepo HEAD all

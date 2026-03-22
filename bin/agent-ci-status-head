@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage:
+  agent-ci-status-head [repo] [ref] [log_mode]
+
+Description:
+  Show GitHub Actions run status for a commit (default: HEAD), and optionally
+  print troubleshooting logs.
+
+Arguments:
+  repo      Optional, format owner/repo. Defaults to current gh repo.
+  ref       Optional git ref/sha. Defaults to HEAD.
+  log_mode  Optional: none|failed|all. Defaults to failed.
+
+Environment:
+  MAX_LOG_RUNS  Maximum runs to fetch logs for (default: 3).
+
+Examples:
+  agent-ci-status-head
+  agent-ci-status-head myorg/myrepo
+  agent-ci-status-head myorg/myrepo HEAD failed
+  MAX_LOG_RUNS=1 agent-ci-status-head myorg/myrepo HEAD all
+EOF
+}
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  usage
+  exit 0
+fi
+
+REPO="${1:-}"
+REF="${2:-HEAD}"
+LOG_MODE="${3:-failed}"
+MAX_LOG_RUNS="${MAX_LOG_RUNS:-3}"
+
+if [[ -z "$REPO" ]]; then
+  REPO="$(gh repo view --json nameWithOwner -q .nameWithOwner)"
+fi
+
+SHA="$(git rev-parse "$REF")"
+
+echo "Repo:   $REPO"
+echo "Commit: $SHA"
+echo
+
+RUNS_TSV="$(
+  gh run list -R "$REPO" --commit "$SHA" --limit 100 \
+    --json databaseId,workflowName,status,conclusion,url \
+    --jq '.[] | [.databaseId, .workflowName, .status, (.conclusion // "-"), .url] | @tsv'
+)"
+
+if [[ -z "$RUNS_TSV" ]]; then
+  echo "No GitHub Actions runs found for this commit."
+  exit 0
+fi
+
+echo -e "RUN_ID\tWORKFLOW\tSTATUS\tCONCLUSION\tURL"
+printf '%s\n' "$RUNS_TSV" | column -t -s $'\t'
+echo
+
+if [[ "$LOG_MODE" == "none" ]]; then
+  exit 0
+fi
+
+count=0
+while IFS=$'\t' read -r RUN_ID WORKFLOW STATUS CONCLUSION URL; do
+  [[ -z "$RUN_ID" ]] && continue
+
+  should_log="false"
+  case "$LOG_MODE" in
+    all) should_log="true" ;;
+    failed)
+      case "$CONCLUSION" in
+        failure|timed_out|cancelled|action_required|startup_failure|stale)
+          should_log="true"
+          ;;
+      esac
+      ;;
+    *)
+      echo "Invalid log_mode: $LOG_MODE (use none|failed|all)" >&2
+      exit 2
+      ;;
+  esac
+
+  if [[ "$should_log" == "true" ]]; then
+    count=$((count + 1))
+    if (( count > MAX_LOG_RUNS )); then
+      echo "Skipping remaining logs (MAX_LOG_RUNS=$MAX_LOG_RUNS)."
+      break
+    fi
+
+    echo "===== Logs: run $RUN_ID ($WORKFLOW, conclusion=$CONCLUSION) ====="
+    if ! gh run view "$RUN_ID" -R "$REPO" --log-failed; then
+      gh run view "$RUN_ID" -R "$REPO" --log || true
+    fi
+    echo
+  fi
+done <<< "$RUNS_TSV"
