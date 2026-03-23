@@ -6,10 +6,56 @@
   ],
   "permission": {
     "read": {
-      "~/.llm-rules/**": "allow",
-      "~/.llm-rules/**/*.md": "allow",
       "~/Documents/obsidian-vault/**": "allow",
       "~/Documents/obsidian-vault/**/*.md": "allow"
+    }
+  },
+  "mcp": {
+    "context7": {
+      "type": "local",
+      "command": [
+        "sh",
+        "-lc",
+        "docker run -i --name \"context7-mcp-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm node:22-alpine npx -y @upstash/context7-mcp"
+      ],
+      "enabled": true
+    },
+    "searxng": {
+      "type": "local",
+      "command": ["uvx", "git+https://github.com/sethamclean/search-mcp/"],
+      "environment": {
+        "SEARXNG_API_URL": "{env:SEARXNG_API_URL}"
+      },
+      "enabled": true
+    },
+    "github": {
+      "type": "local",
+      "command": [
+        "sh",
+        "-lc",
+        "docker run -i --name \"github-mcp-server-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server"
+      ],
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "enabled": true
+    },
+    "atlassian": {
+      "type": "local",
+      "command": [
+        "sh",
+        "-lc",
+        "docker run -i --name \"atlassian-mcp-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm -e CONFLUENCE_URL -e CONFLUENCE_USERNAME -e JIRA_URL -e JIRA_USERNAME -e CONFLUENCE_API_TOKEN -e CONFLUENCE_PERSONAL_TOKEN -e JIRA_API_TOKEN -e JIRA_PERSONAL_TOKEN mcp/atlassian"
+      ],
+      "environment": {
+        "CONFLUENCE_URL": "{env:CONFLUENCE_URL}",
+        "CONFLUENCE_USERNAME": "{env:CONFLUENCE_USERNAME}",
+        "JIRA_URL": "{env:JIRA_URL}",
+        "JIRA_USERNAME": "{env:JIRA_USERNAME}",
+        "CONFLUENCE_API_TOKEN": "{env:CONFLUENCE_API_TOKEN}",
+        "JIRA_API_TOKEN": "{env:JIRA_API}"
+      },
+      "enabled": true
     }
   },
   "agent": {

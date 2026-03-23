@@ -65,6 +65,16 @@ alias grep='grep --color=tty -d skip'
 alias cp='cp -i'
 alias vim='nvim'
 alias vi='nvim'
+oc() {
+  local root
+  root="$(git rev-parse --show-toplevel 2>/dev/null)"
+
+  if [[ -n "$root" ]]; then
+    (cd "$root" && opencode "$@")
+  else
+    opencode "$@"
+  fi
+}
 alias rm='rm --one-file-system --preserve-root'
 
 export EDITOR=nvim
