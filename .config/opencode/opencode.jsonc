@@ -1,136 +1,85 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "instructions": [
-    "~/.llm-rules/**/*.md",
-    "~/Documents/obsidian-vault/**/*.md"
-  ],
+  "default_agent": "plan",
   "permission": {
-    "read": {
-      "~/Documents/obsidian-vault/**": "allow",
-      "~/Documents/obsidian-vault/**/*.md": "allow"
+    "skill": {
+      "*": "deny"
     }
   },
+  "agent": {
+    "plan": {
+      "color": "#b8bb26",
+      "permission": {
+        "skill": {
+          "research-brief": "allow",
+          "ci-triage": "allow",
+          "jira-context-resolver": "allow",
+          "local-agent-tools-usage": "allow"
+        }
+      }
+    },
+    "build": {
+      "color": "#fb4934",
+      "tools": {
+        "skill": false
+      }
+    },
+    "review": {
+      "tools": {
+        "skill": false
+      }
+    }
+  },
+  "plugin": [
+    "@tarquinen/opencode-dcp@latest"
+  ],
   "mcp": {
     "context7": {
       "type": "local",
       "command": [
-        "sh",
-        "-lc",
-        "docker run -i --name \"context7-mcp-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm node:22-alpine npx -y @upstash/context7-mcp"
+        "docker",
+        "run",
+        "--rm",
+        "-i",
+        "node:22-alpine",
+        "npx",
+        "-y",
+        "@upstash/context7-mcp"
       ],
       "enabled": true
     },
     "searxng": {
       "type": "local",
-      "command": ["uvx", "git+https://github.com/sethamclean/search-mcp/"],
+      "command": [
+        "uvx",
+        "git+https://github.com/sethamclean/search-mcp/"
+      ],
       "environment": {
         "SEARXNG_API_URL": "{env:SEARXNG_API_URL}"
       },
       "enabled": true
     },
-    "github": {
+    "atlassian_remote": {
       "type": "local",
       "command": [
+        "docker",
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "JIRA_USERNAME",
+        "-e",
+        "JIRA_API",
+        "node:22-alpine",
         "sh",
         "-lc",
-        "docker run -i --name \"github-mcp-server-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm -e GITHUB_PERSONAL_ACCESS_TOKEN ghcr.io/github/github-mcp-server"
+        "AUTH=$(printf '%s:%s' \"$JIRA_USERNAME\" \"$JIRA_API\" | base64 | tr -d '\\n'); exec npx -y mcp-remote@latest https://mcp.atlassian.com/v1/mcp --header \"Authorization: Basic $AUTH\""
       ],
       "environment": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "{env:MCP_GITHUB_PERSONAL_ACCESS_TOKEN}"
-      },
-      "enabled": true
-    },
-    "atlassian": {
-      "type": "local",
-      "command": [
-        "sh",
-        "-lc",
-        "docker run -i --name \"atlassian-mcp-${CODESPACE_NAME:-local}-$$-$(date +%s%N)\" --rm -e CONFLUENCE_URL -e CONFLUENCE_USERNAME -e JIRA_URL -e JIRA_USERNAME -e CONFLUENCE_API_TOKEN -e CONFLUENCE_PERSONAL_TOKEN -e JIRA_API_TOKEN -e JIRA_PERSONAL_TOKEN mcp/atlassian"
-      ],
-      "environment": {
-        "CONFLUENCE_URL": "{env:CONFLUENCE_URL}",
-        "CONFLUENCE_USERNAME": "{env:CONFLUENCE_USERNAME}",
-        "JIRA_URL": "{env:JIRA_URL}",
         "JIRA_USERNAME": "{env:JIRA_USERNAME}",
-        "CONFLUENCE_API_TOKEN": "{env:CONFLUENCE_API_TOKEN}",
-        "JIRA_API_TOKEN": "{env:JIRA_API}"
+        "JIRA_API": "{env:JIRA_API}"
       },
-      "enabled": true
+      "enabled": false
     }
   },
-  "agent": {
-    "build": {
-      "description": "Default implementation agent with practical safeguards.",
-      "mode": "primary",
-      "steps": 20,
-      "prompt": "{file:./prompts/build.md}",
-      "permission": {
-        "edit": "allow",
-        "webfetch": "allow",
-        "bash": {
-          "*": "ask",
-          "git push*": "deny",
-          "git status*": "allow",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "rg *": "allow",
-          "ls *": "allow",
-          "pwd": "allow",
-          "npm test*": "allow",
-          "pnpm test*": "allow",
-          "bun test*": "allow",
-          "pytest*": "allow"
-        },
-        "task": {
-          "*": "deny",
-          "explore": "allow",
-          "general": "ask",
-          "review": "allow"
-        }
-      }
-    },
-    "plan": {
-      "description": "Planning and analysis only; no repo mutation.",
-      "mode": "primary",
-      "steps": 12,
-      "prompt": "{file:./prompts/plan.md}",
-      "permission": {
-        "edit": "deny",
-        "webfetch": "allow",
-        "bash": {
-          "*": "ask",
-          "git status*": "allow",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "rg *": "allow",
-          "ls *": "allow",
-          "pwd": "allow"
-        },
-        "task": {
-          "*": "deny",
-          "explore": "allow",
-          "general": "allow",
-          "review": "allow"
-        }
-      }
-    },
-    "review": {
-      "description": "Read-only reviewer focused on correctness, risk, and verification gaps.",
-      "mode": "subagent",
-      "steps": 10,
-      "prompt": "{file:./prompts/review.md}",
-      "permission": {
-        "edit": "deny",
-        "webfetch": "allow",
-        "bash": {
-          "*": "ask",
-          "git diff*": "allow",
-          "git log*": "allow",
-          "rg *": "allow",
-          "ls *": "allow",
-          "pwd": "allow"
-        }
-      }
-    }
-  }
 }

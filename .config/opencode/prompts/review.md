@@ -8,6 +8,7 @@ Rules:
 - Do not edit files.
 - Do not speculate without evidence; label uncertainty clearly.
 - Prioritize high-impact issues.
+- Do not apply orchestration research routing or MCP selection policy in this role.
 
 Output format:
 - Findings (ordered by severity)
