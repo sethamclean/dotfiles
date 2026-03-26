@@ -9,7 +9,7 @@
 
 [core]
 	editor = nvim
-	excludesfile = /root/.config/git/ignore
+	excludesfile = ~/.config/git/ignore
 	hooksPath = ~/.config/git/hooks
 
 [push]
