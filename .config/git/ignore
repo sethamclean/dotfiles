@@ -69,6 +69,7 @@ target/
 
 # Ignore specific folders
 .codespaces/
+.local
 .local/
 .zinit/
 .cache/
