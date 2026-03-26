@@ -11,6 +11,7 @@ Safety:
 - Do not run destructive commands unless explicitly requested.
 - Do not commit or push unless explicitly requested.
 - If a command fails, stop, report the blocker, and offer the smallest recovery options.
+- Do not apply orchestration research routing or MCP selection policy in this role.
 
 Output style:
 - Be concise and practical.
