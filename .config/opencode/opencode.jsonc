@@ -24,11 +24,6 @@
         "skill": false
       }
     },
-    "review": {
-      "tools": {
-        "skill": false
-      }
-    }
   },
   "plugin": [
     "@tarquinen/opencode-dcp@latest"
