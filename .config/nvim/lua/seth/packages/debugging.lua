@@ -1,3 +1,52 @@
+local function is_dlv_runnable(command)
+	if command == nil or command == "" then
+		return false
+	end
+
+	vim.fn.system({ command, "version" })
+	return vim.v.shell_error == 0
+end
+
+local function resolve_dlv_command()
+	-- On Nix systems, Mason-provided ELF binaries can survive updates while their
+	-- pinned /nix/store loader path disappears, making them non-runnable. Probe
+	-- candidates at runtime and prefer PATH (typically Nix-managed) first.
+	local candidates = {
+		vim.fn.exepath("dlv"),
+		vim.fn.stdpath("data") .. "/mason/bin/dlv",
+		"dlv",
+	}
+	local seen = {}
+
+	for _, candidate in ipairs(candidates) do
+		if candidate ~= "" and not seen[candidate] then
+			seen[candidate] = true
+			if is_dlv_runnable(candidate) then
+				return candidate
+			end
+		end
+	end
+
+	local fallback = vim.fn.exepath("dlv")
+	if fallback == "" then
+		fallback = "dlv"
+	end
+
+	vim.schedule(function()
+		vim.notify(
+			("No runnable Delve binary found. Checked: %s, %s, %s. Falling back to %s."):format(
+				candidates[1] ~= "" and candidates[1] or "(none)",
+				candidates[2],
+				candidates[3],
+				fallback
+			),
+			vim.log.levels.WARN
+		)
+	end)
+
+	return fallback
+end
+
 return {
 	{
 		"mfussenegger/nvim-dap",
@@ -68,12 +117,13 @@ return {
 		},
 		config = function()
 			local dap = require("dap")
+			local dlv_command = resolve_dlv_command()
 			---@diagnostic disable-next-line: undefined-field
 			dap.adapters.go = {
 				type = "server",
 				port = "${port}",
 				executable = {
-					command = vim.fn.stdpath("data") .. "/mason/bin/dlv",
+					command = dlv_command,
 					args = { "dap", "-l", "127.0.0.1:${port}" },
 				},
 			}
@@ -157,6 +207,7 @@ return {
 			"williamboman/mason.nvim",
 		},
 		config = function()
+			local dlv_command = resolve_dlv_command()
 			require("mason-nvim-dap").setup({
 				ensure_installed = { "delve", "python", "codelldb" },
 
@@ -182,7 +233,7 @@ return {
 							type = "server",
 							port = "${port}",
 							executable = {
-								command = vim.fn.stdpath("data") .. "/mason/bin/dlv",
+								command = dlv_command,
 								args = { "dap", "-l", "127.0.0.1:${port}" },
 							},
 						}
