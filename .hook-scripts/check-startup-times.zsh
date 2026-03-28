@@ -13,7 +13,7 @@ NVIM_THRESHOLD=3 # 0.3 seconds
 {
   # Capture user CPU time in tenths of a second
   typeset -F SECONDS=0
-  $(which zsh) -i -c exit
+  env ZSH_BENCHMARK_MODE=1 TMUX=1 $(which zsh) -i -c exit
   integer zsh_time=$(printf "%.0f" $(( SECONDS * 10 )))
   echo "Zsh startup time: 0.${zsh_time}s"
   if (( zsh_time > ZSH_THRESHOLD )); then
