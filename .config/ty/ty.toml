@@ -1,0 +1,6 @@
+[src]
+respect-ignore-files = true
+
+[terminal]
+output-format = "full"
+error-on-warning = false

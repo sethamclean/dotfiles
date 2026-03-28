@@ -3,6 +3,11 @@ vim.keymap.set("n", "<leader>pv", vim.cmd.Ex)
 
 -- Execute visually selected text and write output to the current buffer
 vim.keymap.set("v", "<leader>x", function()
+	local choice = vim.fn.confirm("Execute selected text in shell?", "&Yes\n&No", 2)
+	if choice ~= 1 then
+		return
+	end
+
 	-- Save current mode and exit visual
 	local mode = vim.fn.mode()
 	vim.cmd('normal! gv"xy') -- yank selection to register x
@@ -18,6 +23,11 @@ end, { desc = "Execute selection in shell and insert output below", noremap = tr
 
 -- Execute visually selected text and show output in horizontal split
 vim.keymap.set("v", "<leader>X", function()
+	local choice = vim.fn.confirm("Execute selected text in shell split?", "&Yes\n&No", 2)
+	if choice ~= 1 then
+		return
+	end
+
 	-- Get the selected text
 	local start_pos = vim.fn.getpos("'<")
 	local end_pos = vim.fn.getpos("'>")

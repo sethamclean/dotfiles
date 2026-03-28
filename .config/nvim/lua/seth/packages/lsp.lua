@@ -65,9 +65,24 @@ return {
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			local gopls_command = resolve_gopls_command()
+			local default_publish_diagnostics = vim.lsp.handlers["textDocument/publishDiagnostics"]
+			vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
+				local client = vim.lsp.get_client_by_id(ctx.client_id)
+				if client and client.name == "pyright" then
+					return
+				end
+
+				return default_publish_diagnostics(err, result, ctx, config)
+			end
+
 			require("mason").setup()
-			require("mason-lspconfig").setup({
-				ensure_installed = {
+				require("mason-lspconfig").setup({
+					automatic_enable = {
+						exclude = {
+							"pyrefly",
+						},
+					},
+					ensure_installed = {
 					-- "clangd",
 					-- "csharp_ls",
 					-- "java_language_server",
@@ -85,20 +100,20 @@ return {
 					"terraformls",
 					"lemminx",
 					"yamlls",
-					"ruff",
-					"pyrefly",
-					"pyright",
-				},
-				handlers = {
+						"ruff",
+						"pyright",
+						"ty",
+					},
+					handlers = {
 					function(server_name)
-						local server = servers[server_name] or {}
-						local original_capabilites = vim.lsp.protocol.make_client_capabilities()
-						local capabilities = require("blink.cmp").get_lsp_capabilities(original_capabilites)
+						local server = {}
+						local original_capabilities = vim.lsp.protocol.make_client_capabilities()
+						local capabilities = require("blink.cmp").get_lsp_capabilities(original_capabilities)
 						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-						require("lspconfig")[server_name].setup({})
+						require("lspconfig")[server_name].setup(server)
 					end,
 					-- Custom handler for remark_ls
-					["remark_ls"] = function()
+						["remark_ls"] = function()
 						local lspconfig = require("lspconfig")
 						local configs = require("lspconfig.configs")
 						if not configs.remark_ls then
@@ -125,9 +140,25 @@ return {
 								},
 							},
 						})
-					end,
-					-- Custom handler for lua_ls
-					["lua_ls"] = function()
+						end,
+						["pyright"] = function()
+							require("lspconfig").pyright.setup({
+								single_file_support = true,
+								settings = {
+									python = {
+										analysis = {
+											-- Keep pyright for completion/navigation; ty handles strict typing diagnostics.
+											typeCheckingMode = "off",
+											autoImportCompletions = true,
+											useLibraryCodeForTypes = true,
+											diagnosticMode = "workspace",
+										},
+									},
+								},
+							})
+						end,
+						-- Custom handler for lua_ls
+						["lua_ls"] = function()
 						require("lspconfig").lua_ls.setup({
 							settings = {
 								Lua = {
@@ -195,7 +226,28 @@ return {
 						})
 					end,
 				},
-			})
-		end,
-	},
+				})
+
+				vim.lsp.config("ty", {
+					cmd = { "ty", "server" },
+					filetypes = { "python" },
+					root_markers = { "ty.toml", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git" },
+					root_dir = function(bufnr, on_dir)
+						local fname = vim.api.nvim_buf_get_name(bufnr)
+						local root = vim.fs.root(fname, {
+							"ty.toml",
+							"pyproject.toml",
+							"setup.py",
+							"setup.cfg",
+							"requirements.txt",
+							".git",
+						})
+
+						on_dir(root or vim.fs.dirname(fname))
+					end,
+					single_file_support = true,
+				})
+				vim.lsp.enable("ty")
+			end,
+		},
 }

@@ -45,3 +45,16 @@ Seth McLean's dotfiles
    ./bootstrap.sh
    ```
 
+## Global Python Tooling Config
+
+These dotfiles include global config files for `ty` and `ruff`:
+
+- `~/.config/ty/ty.toml`
+- `~/.config/ruff/pyproject.toml`
+
+They are managed from this repo at:
+
+- `.config/ty/ty.toml`
+- `.config/ruff/pyproject.toml`
+
+Project-level config still takes precedence when present (for example, a local `ty.toml`, `pyproject.toml`, or `ruff.toml` in a project).

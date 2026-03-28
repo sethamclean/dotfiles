@@ -4,22 +4,6 @@ return {
 	config = function()
 		require("noice").setup({
 			notify = { enabled = false },
-			routes = {
-				{
-					view = "mini",
-					filter = {
-						event = "notify",
-						kind = "info",
-					},
-				},
-				{
-					view = "mini",
-					filter = {
-						event = "notify",
-						kind = "warn",
-					},
-				},
-			},
 		})
 	end,
 	opts = {},

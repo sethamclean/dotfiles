@@ -8,7 +8,7 @@ return {
 				sh = { "shfmt" },
 				python = { "ruff_format" },
 				-- go = { "gofmt" }, use gofumpt via gopls configuration
-				rust = { "cargo fmt" },
+				rust = { "rustfmt" },
 				javascript = { "prettier" },
 				css = { "prettier" },
 				html = { "prettier" },
