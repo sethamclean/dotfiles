@@ -45,10 +45,25 @@ return {
 		sources = {
 			default = { "lsp", "path", "snippets", "buffer", "copilot" },
 			providers = {
+				lsp = {
+					score_offset = 0,
+				},
+				path = {
+					score_offset = -6,
+					min_keyword_length = 2,
+				},
+				snippets = {
+					score_offset = -5,
+					min_keyword_length = 3,
+				},
+				buffer = {
+					score_offset = -8,
+					min_keyword_length = 3,
+				},
 				copilot = {
 					name = "copilot",
 					module = "blink-cmp-copilot", -- The module name from the dependency
-					score_offset = 100, -- Boost priority so it shows up high
+					score_offset = -10,
 					async = true,
 				},
 			},
