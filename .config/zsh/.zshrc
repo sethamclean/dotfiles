@@ -88,7 +88,36 @@ export UV_CACHE_DIR="$HOME/.cache/uv"
 #------------------------------------------------------------------------------
 # Node path
 #------------------------------------------------------------------------------
-export PATH="$PATH:$(npm config get prefix)/bin"
+typeset -g npm_prefix=""
+if [[ -n "${NPM_CONFIG_PREFIX:-}" ]]; then
+  npm_prefix="$NPM_CONFIG_PREFIX"
+elif [[ -f "$HOME/.npmrc" ]]; then
+  while IFS= read -r line; do
+    line="${line%%#*}"
+    line="${line##[[:space:]]#}"
+    line="${line%%[[:space:]]#}"
+    [[ -z "$line" ]] && continue
+
+    case "$line" in
+      prefix=*)
+        npm_prefix="${line#prefix=}"
+        ;;
+      prefix\ =\ *)
+        npm_prefix="${line#prefix = }"
+        ;;
+    esac
+
+    [[ -n "$npm_prefix" ]] && break
+  done < "$HOME/.npmrc"
+fi
+
+if [[ -z "$npm_prefix" ]]; then
+  npm_prefix="$HOME/.local"
+fi
+
+if [[ -d "$npm_prefix/bin" ]]; then
+  export PATH="$PATH:$npm_prefix/bin"
+fi
 #------------------------------------------------------------------------------
 # Bin
 #------------------------------------------------------------------------------
@@ -112,14 +141,12 @@ function start_agent {
     /usr/bin/ssh-add;
 }
 # Source SSH settings, if applicable
-if [ -f "${SSH_ENV}" ]; then
+if [[ -f "${SSH_ENV}" ]]; then
     . "${SSH_ENV}" > /dev/null
-    #ps ${SSH_AGENT_PID} doesn't work under cywgin
-    ps -ef | grep ${SSH_AGENT_PID} | grep ssh-agent$ > /dev/null || {
-        start_agent;
-    }
-else
-    start_agent;
+fi
+
+if [[ -z "${SSH_AGENT_PID:-}" || -z "${SSH_AUTH_SOCK:-}" || ! -S "${SSH_AUTH_SOCK}" ]] || ! kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
+    start_agent
 fi
 
 #------------------------------------------------------------------------------
@@ -141,8 +168,10 @@ fzf_completions_path=/usr/share/fzf
 if [ -d "$HOME/.nix-profile/share/fzf" ]; then
 	fzf_completions_path=$HOME/.nix-profile/share/fzf
 fi
-source ${fzf_completions_path}/key-bindings.zsh
-source ${fzf_completions_path}/completion.zsh
+if [[ -z "${ZSH_BENCHMARK_MODE:-}" ]]; then
+  source ${fzf_completions_path}/key-bindings.zsh
+  source ${fzf_completions_path}/completion.zsh
+fi
 export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
 export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path /workspaces --search-path /root --search-path $PWD"
@@ -179,10 +208,9 @@ fi
 #------------------------------------------------------------------------------
 #`Zoxide`settings
 #------------------------------------------------------------------------------
-if [ -x "$(which zoxide)" ];
-then
+if (( ${+commands[zoxide]} )); then
     function cd () {
-      __zoxide_z $@
+      __zoxide_z "$@"
     }
     eval "$(zoxide init zsh)"
 fi
@@ -193,8 +221,6 @@ export _ZO_FZF_OPTS="--preview 'exa -Tlo --time-style=iso --no-filesize --no-per
 #------------------------------------------------------------------------------
 setopt auto_cd
 cdpath=($HOME /workspaces .. ../..)
-autoload -U compinit 
-compinit
 
 #------------------------------------------------------------------------------
 # Bat
@@ -204,12 +230,13 @@ alias cat='bat'
 #------------------------------------------------------------------------------
 # Optimize compinit and completion loading
 #------------------------------------------------------------------------------
-# Only check for new completions once a day
-if [[ -n ${ZDOTDIR}/.zcompdump(#qN.mh+24) ]]; then
+autoload -U compinit
+compinit -C
+
+zsh_refresh_compinit() {
+  rm -f "${ZDOTDIR:-$HOME}/.zcompdump"
   compinit
-else
-  compinit -C
-fi
+}
 
 # Load bashcompinit only if needed (for AWS completion)
 if [[ -x /usr/sbin/aws_completer ]]; then
