@@ -1,3 +1,59 @@
+local function is_command_runnable(command, args)
+	if command == nil or command == "" then
+		return false
+	end
+
+	local cmd = { command }
+	if args ~= nil then
+		for _, arg in ipairs(args) do
+			table.insert(cmd, arg)
+		end
+	end
+
+	vim.fn.system(cmd)
+	return vim.v.shell_error == 0
+end
+
+local function resolve_gopls_command()
+	-- On Nix systems, Mason-provided ELF binaries can survive updates while their
+	-- pinned /nix/store loader path disappears, making them non-runnable. Probe
+	-- candidates at runtime and prefer PATH (typically Nix-managed) first.
+	local candidates = {
+		vim.fn.exepath("gopls"),
+		vim.fn.stdpath("data") .. "/mason/bin/gopls",
+		"gopls",
+	}
+	local seen = {}
+
+	for _, candidate in ipairs(candidates) do
+		if candidate ~= "" and not seen[candidate] then
+			seen[candidate] = true
+			if is_command_runnable(candidate, { "version" }) then
+				return candidate
+			end
+		end
+	end
+
+	local fallback = vim.fn.exepath("gopls")
+	if fallback == "" then
+		fallback = "gopls"
+	end
+
+	vim.schedule(function()
+		vim.notify(
+			("No runnable gopls binary found. Checked: %s, %s, %s. Falling back to %s."):format(
+				candidates[1] ~= "" and candidates[1] or "(none)",
+				candidates[2],
+				candidates[3],
+				fallback
+			),
+			vim.log.levels.WARN
+		)
+	end)
+
+	return fallback
+end
+
 return {
 	{
 		"neovim/nvim-lspconfig",
@@ -8,6 +64,7 @@ return {
 		},
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
+			local gopls_command = resolve_gopls_command()
 			require("mason").setup()
 			require("mason-lspconfig").setup({
 				ensure_installed = {
@@ -34,6 +91,10 @@ return {
 				},
 				handlers = {
 					function(server_name)
+						local server = servers[server_name] or {}
+						local original_capabilites = vim.lsp.protocol.make_client_capabilities()
+						local capabilities = require("blink.cmp").get_lsp_capabilities(original_capabilites)
+						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
 						require("lspconfig")[server_name].setup({})
 					end,
 					-- Custom handler for remark_ls
@@ -99,6 +160,7 @@ return {
 					-- Custom handler for gopls
 					["gopls"] = function()
 						require("lspconfig").gopls.setup({
+							cmd = { gopls_command },
 							settings = {
 								gopls = {
 									buildFlags = { "-tags=integration" },
