@@ -70,9 +70,9 @@ oc() {
   root="$(git rev-parse --show-toplevel 2>/dev/null)"
 
   if [[ -n "$root" ]]; then
-    (cd "$root" && opencode "$@")
+    (cd "$root" && opencode -c "$@")
   else
-    opencode "$@"
+    opencode -c "$@"
   fi
 }
 alias rm='rm --one-file-system --preserve-root'
