@@ -6,18 +6,12 @@ return {
     vim.o.timeout = true
     vim.o.timeoutlen = 300
   end,
-  opts = {
-    -- your configuration comes here
-    -- or leave it empty to use the default settings
-    -- refer to the configuration section below
-  },
+  opts = {},
   config = function()
-    local which = require("which-key")
-    which.register({
-        l = { name = "Lspsaga" },
-        }, { prefix = "<leader>" })
-    which.register({
-        f = { name = "Telescope" },
-        }, { prefix = "<leader>" })
+    local wk = require("which-key")
+    wk.add({
+      { "<leader>f", group = "Telescope" },
+      { "<leader>l", group = "Lspsaga" },
+    })
   end,
 }
