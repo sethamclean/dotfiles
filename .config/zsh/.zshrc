@@ -9,9 +9,13 @@ if [[ ! -f $HOME/.zinit/bin/zinit.zsh ]]; then
         print -P "%F{33}▓▒░ %F{34}Installation successful.%F" || \
         print -P "%F{160}▓▒░ The clone has failed.%F"
 fi
-source "$HOME/.zinit/bin/zinit.zsh"
-autoload -Uz _zinit
-(( ${+_comps} )) && _comps[zinit]=_zinit
+if [[ -f "$HOME/.zinit/bin/zinit.zsh" ]]; then
+  source "$HOME/.zinit/bin/zinit.zsh"
+  autoload -Uz _zinit
+  (( ${+_comps} )) && _comps[zinit]=_zinit
+elif [[ -o interactive ]]; then
+  print -P "%F{160}▓▒░ zinit unavailable; continuing without plugin manager.%f"
+fi
 
 #------------------------------------------------------------------------------
 # zsh plugins via zinit
@@ -24,14 +28,17 @@ zinit wait lucid light-mode for \
   atinit"ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20" \
   atload"_zsh_autosuggest_start" \
   zsh-users/zsh-autosuggestions \
-  dracula/zsh \
   Aloxaf/fzf-tab \
 
 #------------------------------------------------------------------------------
 # ZSH copilot settings
 #------------------------------------------------------------------------------
-bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
-bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
+if (( ${+widgets[zsh_gh_copilot_explain]} )); then
+  bindkey '^[|' zsh_gh_copilot_explain  # bind Alt+shift+\ to explain
+fi
+if (( ${+widgets[zsh_gh_copilot_suggest]} )); then
+  bindkey '^[\' zsh_gh_copilot_suggest  # bind Alt+\ to suggest
+fi
 
 #------------------------------------------------------------------------------
 # Theme settings
@@ -61,7 +68,7 @@ set -o vi
 #------------------------------------------------------------------------------
 # Custom bindings and exports
 #------------------------------------------------------------------------------
-alias grep='grep --color=tty -d skip'
+alias grep='grep --color=auto'
 alias cp='cp -i'
 alias vim='nvim'
 alias vi='nvim'
@@ -73,6 +80,13 @@ oc() {
     (cd "$root" && opencode -c "$@")
   else
     opencode -c "$@"
+  fi
+}
+clip() {
+  if [[ -n "$TMUX" ]] && (( ${+commands[tmux]} )); then
+    tmux load-buffer -w -
+  else
+    python -c 'import base64,sys; data=sys.stdin.buffer.read(); print(f"\033]52;c;{base64.b64encode(data).decode()}\a", end="")'
   fi
 }
 alias rm='rm --one-file-system --preserve-root'
@@ -88,14 +102,15 @@ export UV_CACHE_DIR="$HOME/.cache/uv"
 #------------------------------------------------------------------------------
 # Node path
 #------------------------------------------------------------------------------
+typeset -U path
 typeset -g npm_prefix=""
 if [[ -n "${NPM_CONFIG_PREFIX:-}" ]]; then
   npm_prefix="$NPM_CONFIG_PREFIX"
 elif [[ -f "$HOME/.npmrc" ]]; then
   while IFS= read -r line; do
     line="${line%%#*}"
-    line="${line##[[:space:]]#}"
-    line="${line%%[[:space:]]#}"
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
     [[ -z "$line" ]] && continue
 
     case "$line" in
@@ -116,17 +131,17 @@ if [[ -z "$npm_prefix" ]]; then
 fi
 
 if [[ -d "$npm_prefix/bin" ]]; then
-  export PATH="$PATH:$npm_prefix/bin"
+  path+=("$npm_prefix/bin")
 fi
 #------------------------------------------------------------------------------
 # Bin
 #------------------------------------------------------------------------------
-export PATH="$HOME/bin/:$PATH"
+path=("$HOME/bin" $path)
 
 #------------------------------------------------------------------------------
 # Go Bin
 #------------------------------------------------------------------------------
-export PATH="$PATH:$HOME/go/bin/"
+path+=("$HOME/go/bin")
 
 #------------------------------------------------------------------------------
 # SSH agent
@@ -146,20 +161,15 @@ if [[ -f "${SSH_ENV}" ]]; then
 fi
 
 if [[ -z "${SSH_AGENT_PID:-}" || -z "${SSH_AUTH_SOCK:-}" || ! -S "${SSH_AUTH_SOCK}" ]] || ! kill -0 "${SSH_AGENT_PID}" 2>/dev/null; then
-    start_agent
+    if [[ -o interactive ]] && [[ -t 0 ]] && [[ -t 1 ]] && (( ${+commands[ssh-agent]} )); then
+        start_agent
+    fi
 fi
 
 #------------------------------------------------------------------------------
 # less
 #------------------------------------------------------------------------------
 export LESS="eFRX"
-
-#------------------------------------------------------------------------------
-# Code not vi
-#------------------------------------------------------------------------------
-if [ "$TERM_PROGRAM" = "vscode" ]; then
-  alias vi='code $@'
-fi
 
 #------------------------------------------------------------------------------
 # FZF
@@ -169,8 +179,12 @@ if [ -d "$HOME/.nix-profile/share/fzf" ]; then
 	fzf_completions_path=$HOME/.nix-profile/share/fzf
 fi
 if [[ -z "${ZSH_BENCHMARK_MODE:-}" ]]; then
-  source ${fzf_completions_path}/key-bindings.zsh
-  source ${fzf_completions_path}/completion.zsh
+  if [[ -f "${fzf_completions_path}/key-bindings.zsh" ]]; then
+    source "${fzf_completions_path}/key-bindings.zsh"
+  fi
+  if [[ -f "${fzf_completions_path}/completion.zsh" ]]; then
+    source "${fzf_completions_path}/completion.zsh"
+  fi
 fi
 export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
@@ -196,12 +210,25 @@ unset GITHUB_TOKEN
 #------------------------------------------------------------------------------
 # Auto start tmux
 #------------------------------------------------------------------------------
-# Simple tmux auto-start: attach if session exists, otherwise create
-if [ -z "$TMUX" ] && [ -z "$TMUX_RESURRECT_RESTORE" ]; then
-  if tmux has-session 2>/dev/null; then
-    tmux attach
-  else
-    tmux new-session -s main
+# Simple tmux auto-start: interactive TTY only; skip local WezTerm mux panes
+if [[ -o interactive ]] && [[ -t 0 ]] && [[ -t 1 ]] && (( ${+commands[tmux]} )); then
+  is_ssh_session=0
+  is_wezterm_mux_session=0
+
+  if [[ -n "$SSH_CONNECTION" ]]; then
+    is_ssh_session=1
+  fi
+
+  if [[ -n "$WEZTERM_PANE" && "$is_ssh_session" -eq 0 ]]; then
+    is_wezterm_mux_session=1
+  fi
+
+  if [[ -z "$TMUX" && -z "$TMUX_RESURRECT_RESTORE" && "$is_wezterm_mux_session" -eq 0 ]]; then
+    if tmux has-session 2>/dev/null; then
+      tmux attach
+    else
+      tmux new-session -s main
+    fi
   fi
 fi
 
@@ -324,4 +351,6 @@ export VECTOR_DB_URI="chromadb://localhost:8000"
 #------------------------------------------------------------------------------
 # direnv bootstrap
 #------------------------------------------------------------------------------
-eval "$(direnv hook zsh)"
+if (( ${+commands[direnv]} )); then
+  eval "$(direnv hook zsh)"
+fi
