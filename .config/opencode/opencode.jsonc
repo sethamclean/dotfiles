@@ -1,5 +1,6 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  // Communication policy: keep assistant tone neutral and non-sycophantic.
   "default_agent": "plan",
   "permission": {
     "skill": {
