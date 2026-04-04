@@ -1,5 +1,5 @@
 return {
-	"dracula/vim",
+	"AlexvZyl/nordic.nvim",
 	lazy = true,
 	priority = 1000,
 	config = function()
