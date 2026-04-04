@@ -44,6 +44,7 @@ fi
 # Theme settings
 #------------------------------------------------------------------------------
 export SPACESHIP_VI_MODE_SHOW="0"
+export SPACESHIP_PROMPT_PREFIXES_SHOW="false"
 
 #------------------------------------------------------------------------------
 # User configuration
@@ -170,6 +171,17 @@ fi
 # less
 #------------------------------------------------------------------------------
 export LESS="eFRX"
+export PAGER="less -R"
+export MANPAGER="less -R"
+
+# Catppuccin-ish less styling (256-color friendly)
+export LESS_TERMCAP_mb=$'\e[1;38;5;141m'
+export LESS_TERMCAP_md=$'\e[1;38;5;141m'
+export LESS_TERMCAP_me=$'\e[0m'
+export LESS_TERMCAP_so=$'\e[48;5;238;38;5;189m'
+export LESS_TERMCAP_se=$'\e[0m'
+export LESS_TERMCAP_us=$'\e[1;38;5;111m'
+export LESS_TERMCAP_ue=$'\e[0m'
 
 #------------------------------------------------------------------------------
 # FZF
@@ -199,6 +211,10 @@ export FZF_CTRL_T_OPTS="
 #------------------------------------------------------------------------------
 # Exa alias
 #------------------------------------------------------------------------------
+# Catppuccin-style exa/eza colors (Mocha, 256-color friendly)
+export EXA_COLORS="di=38;5;147:ln=38;5;117:so=38;5;111:pi=38;5;109:ex=38;5;114:bd=38;5;222:cd=38;5;222:fi=38;5;252:ur=38;5;210:uw=38;5;222:ux=38;5;114:gr=38;5;210:gw=38;5;222:gx=38;5;114:tr=38;5;210:tw=38;5;222:tx=38;5;114"
+export EZA_COLORS="$EXA_COLORS"
+
 alias ls='exa -alo --time-style=iso --no-permissions --icons=always --color=always'
 alias lst='exa -aTlo --git-ignore --time-style=iso --no-filesize --no-permissions --icons=always --color=always'
 
@@ -253,6 +269,7 @@ cdpath=($HOME /workspaces .. ../..)
 # Bat
 #------------------------------------------------------------------------------
 alias cat='bat'
+export BAT_THEME="Catppuccin Mocha"
 
 #------------------------------------------------------------------------------
 # Optimize compinit and completion loading
@@ -334,7 +351,15 @@ fi
 # AWS Profile selector with fzf
 #------------------------------------------------------------------------------
 aws-profile() {
-  local profile=$(aws configure list-profiles | fzf --height 40% --layout=reverse --border)
+  local query="${1-}"
+  local profile
+
+  if [[ -n "$query" ]]; then
+    profile=$(aws configure list-profiles | fzf -q "$query" --height 40% --layout=reverse --border)
+  else
+    profile=$(aws configure list-profiles | fzf --height 40% --layout=reverse --border)
+  fi
+
   if [[ -n "$profile" ]]; then
     echo "export AWS_PROFILE=$profile" > "$HOME/.env_aws_profile"
     source "$HOME/.env_aws_profile"
