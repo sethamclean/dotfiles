@@ -1,63 +1,116 @@
-[user]
-	name = Seth McLean
-	email = seth-mclean@idexx.com
-
 [alias]
-	tree = log --oneline --graph --color --all --decorate
+	br = !git branch --all --color=always --sort=-committerdate | sed 's/^..//' | fzf --ansi --layout=reverse --height=80% --preview 'git --no-pager log --oneline --decorate --color=always -n 20 {1}' --preview-window=right:70%:wrap | sed 's%^remotes/[^/]*/%%' | xargs -r git checkout
 	d = difftool
+	hist = log --graph --decorate --date=relative --pretty=format:'%C(auto)%h%d %s %C(black)%C(bold)%cr %C(blue)<%an>'
+	hist-all = log --all --graph --decorate --date=short --pretty=format:'%C(auto)%h%d %s %C(black)%C(bold)%cd %C(blue)<%an>'
+	hist-file = log --follow --date=short --pretty=format:'%C(auto)%h %C(black)%C(bold)%cd%Creset %s %C(blue)<%an>' --
+	hist-main = log --left-right --cherry --graph --oneline main...HEAD
+	showpick = !git log --date=short --pretty=format:'%h %C(blue)%cd%Creset %s %C(black)%C(bold)<%an>' --color=always "$@" | fzf --ansi --layout=reverse --height=80% --preview 'git --no-pager show --color=always --stat {1}' --preview-window=right:70%:wrap | awk '{print $1}' | xargs -r git show --color=always
+	st = status --short --branch
 	status-report = !git --no-pager diff --stat && git --no-pager status -s
+	tree = log --oneline --graph --color --all --decorate
+
+[branch]
+	sort = -committerdate
+
+[column]
+	ui = auto
+	branch = auto
+
+[commit]
+	template = ~/.config/git/hooks/commit.template
 
 [core]
 	editor = nvim
 	excludesfile = ~/.config/git/ignore
 	hooksPath = ~/.config/git/hooks
-
-[push]
-	default = current
-	followTags = true
-	autoSetupRemote = true
-
-[merge]
-	tool = vimdiff
-	path = nvim
-
-[difftool]
-	prompt = false
-	tool = vimdiff
-	path = nvim
-
-[rerere]
-	enabled = 1
-
-[rebase]
-	instructionFormat = (%an <%ae>) %s
-
-[url "org-59374259@github.com:idexx-is/"]
-	insteadOf = "is:"
-
-[url "org-176619343@github.com:idexx-laboratories/"]
-  insteadof = "idx:"
-
-[credential "https://github.com"]
-	helper = !gh auth git-credential
+	pager = delta
 
 [credential "https://gist.github.com"]
 	helper = !gh auth git-credential
 
-[column]
-	ui = auto
+[credential "https://github.com"]
+	helper = !gh auth git-credential
 
-[branch]
-	sort = -committerdate
+[delta]
+	commit-decoration-style = none
+	dark = true
+	file-decoration-style = none
+	file-style = "#cdd6f4"
+	hunk-header-decoration-style = none
+	hunk-header-file-style = "#cdd6f4" bold
+	hunk-header-line-number-style = "#bac2de"
+	hunk-header-style = file line-number syntax bold
+	keep-plus-minus-markers = true
+	line-numbers = true
+	line-numbers-left-format = "{nm:^4} "
+	line-numbers-left-style = "#bac2de #1e2030"
+	line-numbers-minus-style = "#f38ba8 #1e2030"
+	line-numbers-plus-style = "#a6e3a1 #1e2030"
+	line-numbers-right-format = "{np:^4} "
+	line-numbers-right-style = "#bac2de #1e2030"
+	line-numbers-zero-style = "#6c7086 #1e2030"
+	minus-emph-style = syntax
+	minus-non-emph-style = syntax
+	minus-style = syntax "#38232f"
+	navigate = true
+	plus-emph-style = syntax
+	plus-non-emph-style = syntax
+	plus-style = syntax "#1f2d24"
+	side-by-side = true
+	syntax-theme = Catppuccin Mocha
+	zero-style = normal
 
-[pull]
-	rebase = true
+[diff]
+	colorMoved = default
+
+[difftool]
+	prompt = false
+	tool = vimdiff
+
+[difftool "vimdiff"]
+	path = nvim
+
+[help]
+	autocorrect = prompt
 
 [init]
 	defaultBranch = main
 
-[help]
-	autocorrect = 10
+[interactive]
+	diffFilter = delta --color-only
 
-[commit]
-	template = ~/.config/git/hooks/commit.template
+[merge]
+	conflictStyle = zdiff3
+	tool = vimdiff
+
+[mergetool "vimdiff"]
+	path = nvim
+
+[pull]
+	rebase = true
+
+[remote "origin"]
+	prune = true
+	pruneTags = true
+
+[push]
+	autoSetupRemote = true
+	default = current
+	followTags = true
+
+[rebase]
+	instructionFormat = (%an <%ae>) %s
+
+[rerere]
+	enabled = 1
+
+[url "org-176619343@github.com:idexx-laboratories/"]
+	insteadOf = "idx:"
+
+[url "org-59374259@github.com:idexx-is/"]
+	insteadOf = "is:"
+
+[user]
+	email = seth-mclean@idexx.com
+	name = Seth McLean
