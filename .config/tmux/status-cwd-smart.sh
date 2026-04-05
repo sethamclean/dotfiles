@@ -148,7 +148,10 @@ colorize_markers() {
 		case "$char" in
 		'*') out+="#[fg=colour220]*#[fg=colour250]" ;;
 		'+') out+="#[fg=colour40]+#[fg=colour250]" ;;
+		'?') out+="#[fg=colour117]?#[fg=colour250]" ;;
+		'✖') out+="#[fg=colour203]✖#[fg=colour250]" ;;
 		'^') out+="#[fg=colour220]^#[fg=colour250]" ;;
+		'↓') out+="#[fg=colour214]↓#[fg=colour250]" ;;
 		'$') out+="#[fg=colour45]$#[fg=colour250]" ;;
 		'M' | 'R' | 'C') out+="#[fg=colour207]${char}#[fg=colour250]" ;;
 		'!') out+="#[fg=colour214]!#[fg=colour250]" ;;
@@ -190,19 +193,69 @@ if git_quick rev-parse --is-inside-work-tree >/dev/null 2>&1; then
 		fi
 	fi
 
-	if ! git_quick diff --quiet --ignore-submodules -- >/dev/null 2>&1; then
-		markers+="*"
+	status_output="$(git_quick status --porcelain --untracked-files=normal 2>/dev/null || true)"
+	if [[ -n "$status_output" ]]; then
+		has_dirty=false
+		has_staged=false
+		has_untracked=false
+		has_conflicts=false
+
+		while IFS= read -r line; do
+			[[ -z "$line" ]] && continue
+
+			code="${line:0:2}"
+			if [[ "$code" == "??" ]]; then
+				has_untracked=true
+				continue
+			fi
+
+			x="${code:0:1}"
+			y="${code:1:1}"
+
+			case "$code" in
+			DD | AU | UD | UA | DU | AA | UU)
+				has_conflicts=true
+				;;
+			esac
+
+			if [[ "$x" != " " ]]; then
+				has_staged=true
+			fi
+
+			if [[ "$y" != " " ]]; then
+				has_dirty=true
+			fi
+		done <<<"$status_output"
+
+		if [[ "$has_dirty" == true ]]; then
+			markers+="*"
+		fi
+
+		if [[ "$has_staged" == true ]]; then
+			markers+="+"
+		fi
+
+		if [[ "$has_untracked" == true ]]; then
+			markers+="?"
+		fi
+
+		if [[ "$has_conflicts" == true ]]; then
+			markers+="✖"
+		fi
 	fi
 
-	if ! git_quick diff --cached --quiet --ignore-submodules -- >/dev/null 2>&1; then
-		markers+="+"
-	fi
-
-	ahead_count=""
 	if git_quick rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
-		ahead_count="$(git_quick rev-list --count '@{upstream}..HEAD' 2>/dev/null || true)"
-		if [[ "$ahead_count" =~ ^[0-9]+$ ]] && ((ahead_count > 0)); then
-			markers+="^"
+		ahead_behind="$(git_quick rev-list --left-right --count '@{upstream}...HEAD' 2>/dev/null || true)"
+		if [[ -n "$ahead_behind" ]]; then
+			read -r behind_count ahead_count <<<"$ahead_behind"
+			if [[ "$behind_count" =~ ^[0-9]+$ ]] && [[ "$ahead_count" =~ ^[0-9]+$ ]]; then
+				if ((ahead_count > 0)); then
+					markers+="^"
+				fi
+				if ((behind_count > 0)); then
+					markers+="↓"
+				fi
+			fi
 		fi
 	fi
 
