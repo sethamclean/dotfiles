@@ -62,7 +62,17 @@
 	zero-style = normal
 
 [diff]
-	colorMoved = default
+	algorithm = histogram
+	colorMoved = dimmed-zebra
+	colorMovedWS = allow-indentation-change
+	compactionHeuristic = true
+	indentHeuristic = true
+
+[fetch]
+	writeCommitGraph = true
+
+[gc]
+	writeCommitGraph = true
 
 [difftool]
 	prompt = false
@@ -88,7 +98,11 @@
 	path = nvim
 
 [pull]
+	ff = only
 	rebase = true
+
+[status]
+	aheadBehind = true
 
 [remote "origin"]
 	prune = true
@@ -100,7 +114,10 @@
 	followTags = true
 
 [rebase]
+	autoSquash = true
+	autoStash = true
 	instructionFormat = (%an <%ae>) %s
+	updateRefs = true
 
 [rerere]
 	enabled = 1

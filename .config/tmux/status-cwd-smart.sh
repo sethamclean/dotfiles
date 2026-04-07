@@ -152,7 +152,7 @@ colorize_markers() {
 		'✖') out+="#[fg=colour203]✖#[fg=colour250]" ;;
 		'^') out+="#[fg=colour220]^#[fg=colour250]" ;;
 		'↓') out+="#[fg=colour214]↓#[fg=colour250]" ;;
-		'$') out+="#[fg=colour45]$#[fg=colour250]" ;;
+		'$') out+="#[fg=colour45]\$#[fg=colour250]" ;;
 		'M' | 'R' | 'C') out+="#[fg=colour207]${char}#[fg=colour250]" ;;
 		'!') out+="#[fg=colour214]!#[fg=colour250]" ;;
 		*) out+="$char" ;;
