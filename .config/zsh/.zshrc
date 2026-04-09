@@ -112,6 +112,100 @@ clip() {
 }
 alias rm='rm --one-file-system --preserve-root'
 
+#------------------------------------------------------------------------------
+# Kind codespace helpers
+#------------------------------------------------------------------------------
+kind-codespace-up() {
+  local cluster_name="${KIND_CODESPACE_CLUSTER_NAME:-codespace}"
+  local config_path="${KIND_CODESPACE_CONFIG:-$HOME/.config/kind/codespace.yaml}"
+  local recreate=0
+  local arg
+
+  for arg in "$@"; do
+    case "$arg" in
+      --recreate)
+        recreate=1
+        ;;
+      *)
+        echo "Usage: kind-codespace-up [--recreate]"
+        return 1
+        ;;
+    esac
+  done
+
+  if ! (( ${+commands[docker]} )); then
+    echo "docker is required but was not found in PATH"
+    return 1
+  fi
+  if ! (( ${+commands[kind]} )); then
+    echo "kind is required but was not found in PATH"
+    return 1
+  fi
+  if ! (( ${+commands[kubectl]} )); then
+    echo "kubectl is required but was not found in PATH"
+    return 1
+  fi
+  if [[ ! -f "$config_path" ]]; then
+    echo "Kind config not found at: $config_path"
+    return 1
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    echo "docker daemon is not reachable"
+    return 1
+  fi
+
+  local clusters
+  clusters="$(kind get clusters 2>/dev/null || true)"
+
+  if [[ "$clusters" == *$'\n'"$cluster_name"$'\n'* || "$clusters" == "$cluster_name" || "$clusters" == "$cluster_name"$'\n'* || "$clusters" == *$'\n'"$cluster_name" ]]; then
+    if (( recreate )); then
+      kind delete cluster --name "$cluster_name" || return 1
+    else
+      echo "kind cluster '$cluster_name' already exists; reusing it"
+      kubectl config use-context "kind-$cluster_name" >/dev/null 2>&1 || true
+      kubectl get nodes -o wide
+      return $?
+    fi
+  fi
+
+  kind create cluster --name "$cluster_name" --config "$config_path" || return 1
+  kubectl config use-context "kind-$cluster_name" >/dev/null 2>&1 || true
+  kubectl get nodes -o wide
+}
+
+kind-codespace-down() {
+  local cluster_name="${KIND_CODESPACE_CLUSTER_NAME:-codespace}"
+
+  if ! (( ${+commands[kind]} )); then
+    echo "kind is required but was not found in PATH"
+    return 1
+  fi
+
+  kind delete cluster --name "$cluster_name"
+}
+
+kind-codespace-status() {
+  local cluster_name="${KIND_CODESPACE_CLUSTER_NAME:-codespace}"
+
+  if ! (( ${+commands[kind]} )); then
+    echo "kind is required but was not found in PATH"
+    return 1
+  fi
+  if ! (( ${+commands[kubectl]} )); then
+    echo "kubectl is required but was not found in PATH"
+    return 1
+  fi
+
+  echo "kind clusters:"
+  kind get clusters || return 1
+
+  if kubectl config get-contexts "kind-$cluster_name" >/dev/null 2>&1; then
+    echo
+    echo "nodes for kind-$cluster_name:"
+    kubectl --context "kind-$cluster_name" get nodes -o wide
+  fi
+}
+
 export EDITOR=nvim
 export VISUAL=nvim
 
