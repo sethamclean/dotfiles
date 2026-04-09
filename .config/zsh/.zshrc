@@ -27,8 +27,28 @@ zinit ice depth=1; zinit light spaceship-prompt/spaceship-prompt
 zinit wait lucid light-mode for \
   atinit"ZSH_AUTOSUGGEST_BUFFER_MAX_SIZE=20" \
   atload"_zsh_autosuggest_start" \
-  zsh-users/zsh-autosuggestions \
-  Aloxaf/fzf-tab \
+  zsh-users/zsh-autosuggestions
+
+#------------------------------------------------------------------------------
+# Completion system
+#------------------------------------------------------------------------------
+typeset -gaU fpath
+for zsh_completion_dir in \
+  "$HOME/.nix-profile/share/zsh/site-functions" \
+  "/nix/var/nix/profiles/default/share/zsh/site-functions" \
+  "/run/current-system/sw/share/zsh/site-functions"
+do
+  [[ -d "$zsh_completion_dir" ]] && fpath=("$zsh_completion_dir" $fpath)
+done
+unset zsh_completion_dir
+
+autoload -Uz compinit
+compinit -C
+
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:*' switch-group ',' '.'
+
+zinit light Aloxaf/fzf-tab
 
 #------------------------------------------------------------------------------
 # ZSH copilot settings
@@ -270,12 +290,6 @@ cdpath=($HOME /workspaces .. ../..)
 #------------------------------------------------------------------------------
 alias cat='bat'
 export BAT_THEME="Catppuccin Mocha"
-
-#------------------------------------------------------------------------------
-# Optimize compinit and completion loading
-#------------------------------------------------------------------------------
-autoload -U compinit
-compinit -C
 
 zsh_refresh_compinit() {
   rm -f "${ZDOTDIR:-$HOME}/.zcompdump"
