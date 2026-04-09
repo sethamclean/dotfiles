@@ -98,7 +98,6 @@
 	path = nvim
 
 [pull]
-	ff = only
 	rebase = true
 
 [status]
