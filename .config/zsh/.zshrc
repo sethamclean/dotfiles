@@ -329,8 +329,8 @@ export FZF_CTRL_T_OPTS="
 export EXA_COLORS="di=38;5;147:ln=38;5;117:so=38;5;111:pi=38;5;109:ex=38;5;114:bd=38;5;222:cd=38;5;222:fi=38;5;252:ur=38;5;210:uw=38;5;222:ux=38;5;114:gr=38;5;210:gw=38;5;222:gx=38;5;114:tr=38;5;210:tw=38;5;222:tx=38;5;114"
 export EZA_COLORS="$EXA_COLORS"
 
-alias ls='exa -alo --time-style=iso --no-permissions --icons=always --color=always'
-alias lst='exa -aTlo --git-ignore --time-style=iso --no-filesize --no-permissions --icons=always --color=always'
+alias ls='exa -alo --group-directories-first --time-style=iso --no-permissions --icons=always --color=always'
+alias lst='exa -aTlo --group-directories-first --git-ignore --time-style=iso --no-filesize --no-permissions --icons=always --color=always'
 
 #------------------------------------------------------------------------------
 # Don't use codespaces GITHUB_TOKEN
