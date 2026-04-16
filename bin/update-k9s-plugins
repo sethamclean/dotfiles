@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DOTFILES_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+PLUGIN_DIR="${DOTFILES_ROOT}/.config/k9s/plugins"
+
+declare -A PLUGINS=(
+  ["flux.yaml"]="https://raw.githubusercontent.com/derailed/k9s/master/plugins/flux.yaml"
+)
+
+mkdir -p "${PLUGIN_DIR}"
+
+for local_file in "${!PLUGINS[@]}"; do
+  url="${PLUGINS[${local_file}]}"
+  dest="${PLUGIN_DIR}/${local_file}"
+  curl -fsSL "${url}" -o "${dest}"
+  echo "Updated: ${dest}"
+done
