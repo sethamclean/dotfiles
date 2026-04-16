@@ -1,0 +1,289 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+APPLY=0
+FULL=0
+KEEP_DAYS=7
+
+usage() {
+  cat <<'EOF'
+Usage:
+  cleanup-disk [--apply] [--dry-run] [--full] [--keep-days N] [--help]
+
+Description:
+  Clean up disk usage from Docker and Nix leftovers.
+
+Modes:
+  Default is dry-run (prints what would run).
+  --apply executes cleanup commands.
+
+Options:
+  --apply        Execute cleanup commands (default is dry-run)
+  --dry-run      Print planned commands without executing
+  --full         Aggressive cleanup (ignores keep-days retention)
+  --keep-days N  Retention window for non-full mode (default: 7)
+  -h, --help     Show this help message
+
+Examples:
+  cleanup-disk
+  cleanup-disk --dry-run
+  cleanup-disk --apply
+  cleanup-disk --apply --keep-days 14
+  cleanup-disk --apply --full
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --apply)
+      APPLY=1
+      ;;
+    --dry-run|-n)
+      APPLY=0
+      ;;
+    --full)
+      FULL=1
+      ;;
+    --keep-days)
+      shift
+      if [[ -z "${1:-}" || ! "${1}" =~ ^[0-9]+$ ]]; then
+        printf 'Error: --keep-days requires a non-negative integer\n' >&2
+        exit 2
+      fi
+      KEEP_DAYS="$1"
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'Error: unknown argument: %s\n\n' "$1" >&2
+      usage
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+bytes_human() {
+  local bytes="$1"
+  local units=(B KiB MiB GiB TiB PiB)
+  local unit=0
+  local rem=0
+
+  while (( bytes >= 1024 && unit < ${#units[@]} - 1 )); do
+    rem=$((bytes % 1024))
+    bytes=$((bytes / 1024))
+    unit=$((unit + 1))
+  done
+
+  if (( unit == 0 )); then
+    printf '%s %s' "$bytes" "${units[$unit]}"
+  else
+    printf '%s.%02d %s' "$bytes" "$((rem * 100 / 1024))" "${units[$unit]}"
+  fi
+}
+
+capture_root_avail_bytes() {
+  local lines=()
+  mapfile -t lines < <(df -B1 --output=avail / 2>/dev/null)
+  if (( ${#lines[@]} >= 2 )); then
+    printf '%s' "${lines[1]//[[:space:]]/}"
+  else
+    printf '0'
+  fi
+}
+
+capture_nix_store_bytes() {
+  local size path
+  if [[ -d /nix/store ]]; then
+    read -r size path < <(du -sb /nix/store 2>/dev/null || printf '0 /nix/store\n')
+    printf '%s' "$size"
+  else
+    printf '0'
+  fi
+}
+
+print_header() {
+  local title="$1"
+  printf '\n== %s ==\n' "$title"
+}
+
+print_retention_marker() {
+  if (( FULL == 1 )); then
+    printf 'Retention marker: FULL cleanup (all eligible unused data)\n'
+  else
+    printf 'Retention marker: older than %s days (%sh)\n' "$KEEP_DAYS" "$KEEP_HOURS"
+  fi
+}
+
+count_nix_profile_entries() {
+  local line
+  local count=0
+
+  while IFS= read -r line; do
+    if [[ "$line" == Name:* ]]; then
+      count=$((count + 1))
+    fi
+  done < <(nix profile list 2>/dev/null || true)
+
+  printf '%s' "$count"
+}
+
+count_nix_env_generations() {
+  local line
+  local count=0
+  local current="unknown"
+
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    if [[ "$line" =~ ^[[:space:]]*([0-9]+) ]]; then
+      count=$((count + 1))
+      if [[ "$line" == *"(current)"* ]]; then
+        current="${BASH_REMATCH[1]}"
+      fi
+    fi
+  done < <(nix-env --list-generations 2>/dev/null || true)
+
+  printf '%s|%s' "$count" "$current"
+}
+
+print_usage_snapshot() {
+  local label="$1"
+  local nix_profiles="0"
+  local nix_generations_info="0|unknown"
+  local nix_generation_count="0"
+  local nix_current_generation="unknown"
+
+  print_header "$label Snapshot"
+  print_retention_marker
+
+  printf '\n[Filesystem]\n'
+  if [[ -d /workspaces ]]; then
+    df -h --output=source,size,used,avail,pcent,target / /workspaces
+  else
+    df -h --output=source,size,used,avail,pcent,target /
+  fi
+
+  printf '\n[Docker]\n'
+  if command_exists docker; then
+    docker system df --format 'table {{.Type}}\t{{.TotalCount}}\t{{.Size}}\t{{.Reclaimable}}' || true
+  else
+    printf 'docker not found\n'
+  fi
+
+  printf '\n[Nix: /nix/store]\n'
+  if command_exists nix; then
+    if [[ -d /nix/store ]]; then
+      printf 'Store size: '
+      du -sh /nix/store 2>/dev/null | while read -r size _; do printf '%s\n' "$size"; done
+    else
+      printf '/nix/store not found\n'
+    fi
+
+    nix_profiles="$(count_nix_profile_entries)"
+    printf 'Profiles in current profile: %s\n' "$nix_profiles"
+
+    if command_exists nix-env; then
+      nix_generations_info="$(count_nix_env_generations)"
+      nix_generation_count="${nix_generations_info%%|*}"
+      nix_current_generation="${nix_generations_info##*|}"
+      printf 'nix-env generations: %s (current: %s)\n' "$nix_generation_count" "$nix_current_generation"
+    fi
+  else
+    printf 'nix not found\n'
+  fi
+}
+
+run_cmd() {
+  if (( APPLY == 1 )); then
+    printf '[run] %s\n' "$*"
+    "$@"
+  else
+    printf '[dry-run] %s\n' "$*"
+  fi
+}
+
+root_avail_before="$(capture_root_avail_bytes)"
+nix_store_before="$(capture_nix_store_bytes)"
+KEEP_HOURS=$((KEEP_DAYS * 24))
+
+print_usage_snapshot "Before"
+
+print_header "Cleanup Plan"
+if (( APPLY == 1 )); then
+  printf 'Mode: apply\n'
+else
+  printf 'Mode: dry-run\n'
+fi
+print_retention_marker
+
+print_header "Docker Cleanup"
+if command_exists docker; then
+  if (( FULL == 1 )); then
+    run_cmd docker image prune -a -f
+    run_cmd docker builder prune --all --force
+  else
+    run_cmd docker image prune -a -f --filter "until=${KEEP_HOURS}h"
+    run_cmd docker builder prune --all --force --filter "until=${KEEP_HOURS}h"
+  fi
+else
+  printf 'docker not found; skipping docker cleanup\n'
+fi
+
+print_header "Nix Cleanup"
+if command_exists nix; then
+  if command_exists nix-env; then
+    if (( FULL == 1 )); then
+      run_cmd nix-env --delete-generations old
+    else
+      run_cmd nix-env --delete-generations "${KEEP_DAYS}d"
+    fi
+  fi
+
+  if (( FULL == 1 )); then
+    run_cmd nix-collect-garbage -d
+    if nix profile help 2>/dev/null | grep -q 'wipe-history'; then
+      run_cmd nix profile wipe-history --older-than "${KEEP_DAYS}d"
+    fi
+  else
+    run_cmd nix-collect-garbage --delete-older-than "${KEEP_DAYS}d"
+    if nix profile help 2>/dev/null | grep -q 'wipe-history'; then
+      run_cmd nix profile wipe-history --older-than "${KEEP_DAYS}d"
+    fi
+  fi
+
+  run_cmd nix store optimise
+else
+  printf 'nix not found; skipping nix cleanup\n'
+fi
+
+root_avail_after="$(capture_root_avail_bytes)"
+nix_store_after="$(capture_nix_store_bytes)"
+
+print_usage_snapshot "After"
+
+print_header "Summary"
+if (( APPLY == 1 )); then
+  root_delta=$((root_avail_after - root_avail_before))
+  nix_delta=$((nix_store_before - nix_store_after))
+
+  if (( root_delta >= 0 )); then
+    printf 'Root filesystem available increased by: %s\n' "$(bytes_human "$root_delta")"
+  else
+    printf 'Root filesystem available decreased by: %s\n' "$(bytes_human "$(( -root_delta ))")"
+  fi
+
+  if (( nix_delta >= 0 )); then
+    printf '/nix/store size decreased by: %s\n' "$(bytes_human "$nix_delta")"
+  else
+    printf '/nix/store size increased by: %s\n' "$(bytes_human "$(( -nix_delta ))")"
+  fi
+else
+  printf 'Dry-run only. Re-run with --apply to perform cleanup.\n'
+fi
