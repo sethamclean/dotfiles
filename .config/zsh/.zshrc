@@ -266,11 +266,16 @@ path+=("$HOME/go/bin")
 SSH_ENV="$HOME/.ssh/environment"
 function start_agent {
     echo "Initialising new SSH agent..."
-    /usr/bin/ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"
-    echo succeeded
-    chmod 600 "${SSH_ENV}"
-    . "${SSH_ENV}" > /dev/null
-    /usr/bin/ssh-add;
+    command mkdir -p "$HOME/.ssh"
+    if command ssh-agent | sed 's/^echo/#echo/' > "${SSH_ENV}"; then
+        echo succeeded
+        chmod 600 "${SSH_ENV}"
+        . "${SSH_ENV}" > /dev/null
+        (( ${+commands[ssh-add]} )) && command ssh-add
+    else
+        echo "Failed to start SSH agent."
+        return 1
+    fi
 }
 # Source SSH settings, if applicable
 if [[ -f "${SSH_ENV}" ]]; then
