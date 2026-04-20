@@ -21,7 +21,8 @@ return {
 		local action_state = require("telescope.actions.state")
 
 		local function find_dirs()
-			local search_roots = { "/workspaces", "/root", vim.fn.getcwd() }
+			local work_root = vim.env.WORK_ROOT or (vim.env.HOME .. "/ws")
+			local search_roots = { work_root, "/root", vim.fn.getcwd() }
 			local fd_cmd = {
 				"fd",
 				"--type",

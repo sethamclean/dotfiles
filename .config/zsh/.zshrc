@@ -89,6 +89,8 @@ set -o vi
 #------------------------------------------------------------------------------
 # Custom bindings and exports
 #------------------------------------------------------------------------------
+export WORK_ROOT="${WORK_ROOT:-$HOME/ws}"
+
 alias grep='grep --color=auto'
 alias cp='cp -i'
 alias vim='nvim'
@@ -312,11 +314,11 @@ if [[ -z "${ZSH_BENCHMARK_MODE:-}" ]]; then
     source "${fzf_completions_path}/completion.zsh"
   fi
 fi
-export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path /workspaces --search-path /root --search-path $PWD"
+export FZF_DEFAULT_COMMAND="fd --type f -H -L --search-path $WORK_ROOT --search-path /root --search-path $PWD"
 export FZF_DEFAULT_OPTS='--height 80% --layout=reverse --border'
-export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path /workspaces --search-path /root --search-path $PWD"
+export FZF_ALT_C_COMMAND="fd --type d -H -L --search-path $WORK_ROOT --search-path /root --search-path $PWD"
 export FZF_ALT_C_OPTS="--preview 'fd -H -L . {} | exa -Tlo --git-ignore --time-style=iso --no-filesize --no-permissions --icons=always --color=always --stdin'"
-export FZF_CTRL_T_COMMAND="fd -H -L --search-path /workspaces --search-path /root --search-path $PWD"
+export FZF_CTRL_T_COMMAND="fd -H -L --search-path $WORK_ROOT --search-path /root --search-path $PWD"
 export FZF_CTRL_T_OPTS="
   --preview 'bat -n --color=always {}'
   --bind 'ctrl-/:change-preview-window(down|hidden|)'"
@@ -377,7 +379,7 @@ export _ZO_FZF_OPTS="--preview 'exa -Tlo --time-style=iso --no-filesize --no-per
 # zsh cd path
 #------------------------------------------------------------------------------
 setopt auto_cd
-cdpath=($HOME /workspaces .. ../..)
+cdpath=($HOME $WORK_ROOT .. ../..)
 
 #------------------------------------------------------------------------------
 # Bat
@@ -474,12 +476,6 @@ aws-profile() {
     echo "AWS Profile set to: $profile and written to ~/.env_aws_profile"
   fi
 }
-
-#------------------------------------------------------------------------------
-# Vectorcode configuration
-#------------------------------------------------------------------------------
-export VECTOR_DB_URI="chromadb://localhost:8000"
-
 
 #------------------------------------------------------------------------------
 # direnv bootstrap
