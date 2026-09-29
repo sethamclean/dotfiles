@@ -40,7 +40,6 @@
 
 ## 7) On-Demand Operational References
 - Keep this file minimal. Load extended guidance only when task context matches.
-- If task involves Atlassian/Jira tenant context, load `.config/opencode/extended-ops.md` and use the `Atlassian` section.
 - If task involves local helper scripts (`agent-*`), load `.config/opencode/extended-ops.md` and use the `Local Agent Tools` section.
 - If task involves CI run inspection, load `.config/opencode/extended-ops.md` and use the `CI` section.
 - Do not preload extended ops for unrelated tasks.

@@ -9,7 +9,6 @@ permission:
     "*": deny
     "research-brief": allow
     "ci-triage": allow
-    "jira-context-resolver": allow
     "local-agent-tools-usage": allow
   task:
     "*": deny

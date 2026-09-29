@@ -392,6 +392,113 @@ cdpath=($HOME $WORK_ROOT .. ../..)
 alias cat='bat'
 export BAT_THEME="Catppuccin Mocha"
 
+catx() {
+  local style="numbers,changes"
+  local c_label=$'\033[38;5;111m'
+  local c_value=$'\033[38;5;252m'
+  local c_dim=$'\033[38;5;244m'
+  local c_reset=$'\033[0m'
+  local target
+  local desc
+  local mime
+  local stat_size
+  local stat_perms
+  local stat_owner
+  local stat_links
+  local stat_mtime
+  local stat_atime
+  local stat_ctime
+  local idx
+
+  if (( $# == 0 )); then
+    bat --paging=always --style="$style"
+    return
+  fi
+
+  if [[ "$1" == "-" ]]; then
+    bat --paging=always --style="$style" "$@"
+    return
+  fi
+
+  for target in "$@"; do
+    if [[ ! -e "$target" ]]; then
+      printf 'catx: %s: No such file or directory\n' "$target" >&2
+      return 1
+    fi
+
+    if [[ -d "$target" ]]; then
+      printf 'catx: %s: Is a directory\n' "$target" >&2
+      return 1
+    fi
+  done
+
+  idx=1
+
+  if [[ -t 1 ]]; then
+    {
+      for target in "$@"; do
+        desc="$(file -b "$target" 2>/dev/null || printf 'unknown')"
+        mime="$(file -b --mime-type "$target" 2>/dev/null || printf 'unknown')"
+        stat_size="$(stat --printf='%s bytes' "$target" 2>/dev/null || printf 'unknown')"
+        stat_perms="$(stat --printf='%A (%a)' "$target" 2>/dev/null || printf 'unknown')"
+        stat_owner="$(stat --printf='%U:%G' "$target" 2>/dev/null || printf 'unknown')"
+        stat_links="$(stat --printf='%h' "$target" 2>/dev/null || printf 'unknown')"
+        stat_mtime="$(stat --printf='%y' "$target" 2>/dev/null || printf 'unknown')"
+        stat_atime="$(stat --printf='%x' "$target" 2>/dev/null || printf 'unknown')"
+        stat_ctime="$(stat --printf='%z' "$target" 2>/dev/null || printf 'unknown')"
+
+        printf '%bPath:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$target" "$c_reset"
+        printf '%bType:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$desc" "$c_reset"
+        printf '%bMIME:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$mime" "$c_reset"
+        printf '%bSize:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_size" "$c_reset"
+        printf '%bPerms:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_perms" "$c_reset"
+        printf '%bOwner:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_owner" "$c_reset"
+        printf '%bLinks:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_links" "$c_reset"
+        printf '%bModified:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_mtime" "$c_reset"
+        printf '%bAccessed:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_atime" "$c_reset"
+        printf '%bChanged:%b %b%s%b\n\n' "$c_label" "$c_reset" "$c_dim" "$stat_ctime" "$c_reset"
+
+        bat --paging=never --color=always --style="$style" -- "$target"
+
+        if (( idx < $# )); then
+          printf '\n'
+        fi
+        idx=$((idx + 1))
+      done
+    } | less -R
+  else
+  for target in "$@"; do
+    desc="$(file -b "$target" 2>/dev/null || printf 'unknown')"
+    mime="$(file -b --mime-type "$target" 2>/dev/null || printf 'unknown')"
+    stat_size="$(stat --printf='%s bytes' "$target" 2>/dev/null || printf 'unknown')"
+    stat_perms="$(stat --printf='%A (%a)' "$target" 2>/dev/null || printf 'unknown')"
+    stat_owner="$(stat --printf='%U:%G' "$target" 2>/dev/null || printf 'unknown')"
+    stat_links="$(stat --printf='%h' "$target" 2>/dev/null || printf 'unknown')"
+    stat_mtime="$(stat --printf='%y' "$target" 2>/dev/null || printf 'unknown')"
+    stat_atime="$(stat --printf='%x' "$target" 2>/dev/null || printf 'unknown')"
+    stat_ctime="$(stat --printf='%z' "$target" 2>/dev/null || printf 'unknown')"
+
+    printf '%bPath:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$target" "$c_reset"
+    printf '%bType:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$desc" "$c_reset"
+    printf '%bMIME:%b %b%s%b\n' "$c_label" "$c_reset" "$c_value" "$mime" "$c_reset"
+    printf '%bSize:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_size" "$c_reset"
+    printf '%bPerms:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_perms" "$c_reset"
+    printf '%bOwner:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_owner" "$c_reset"
+    printf '%bLinks:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_links" "$c_reset"
+    printf '%bModified:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_mtime" "$c_reset"
+    printf '%bAccessed:%b %b%s%b\n' "$c_label" "$c_reset" "$c_dim" "$stat_atime" "$c_reset"
+    printf '%bChanged:%b %b%s%b\n\n' "$c_label" "$c_reset" "$c_dim" "$stat_ctime" "$c_reset"
+
+    bat --paging=never --color=always --style="$style" -- "$target" || return 1
+
+    if (( idx < $# )); then
+      printf '\n'
+    fi
+    idx=$((idx + 1))
+  done
+  fi
+}
+
 zsh_refresh_compinit() {
   rm -f "${ZDOTDIR:-$HOME}/.zcompdump"
   compinit

@@ -65,6 +65,8 @@ return {
 		event = { "BufReadPre", "BufNewFile" },
 		config = function()
 			local gopls_command = resolve_gopls_command()
+			local original_capabilities = vim.lsp.protocol.make_client_capabilities()
+			local capabilities = require("blink.cmp").get_lsp_capabilities(original_capabilities)
 			local default_publish_diagnostics = vim.lsp.handlers["textDocument/publishDiagnostics"]
 			vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
 				local client = vim.lsp.get_client_by_id(ctx.client_id)
@@ -75,14 +77,16 @@ return {
 				return default_publish_diagnostics(err, result, ctx, config)
 			end
 
-			require("mason").setup()
-				require("mason-lspconfig").setup({
-					automatic_enable = {
-						exclude = {
-							"pyrefly",
-						},
+			require("mason").setup({
+				PATH = "append",
+			})
+			require("mason-lspconfig").setup({
+				automatic_enable = {
+					exclude = {
+						"pyrefly",
 					},
-					ensure_installed = {
+				},
+				ensure_installed = {
 					-- "clangd",
 					-- "csharp_ls",
 					-- "java_language_server",
@@ -100,66 +104,37 @@ return {
 					"terraformls",
 					"lemminx",
 					"yamlls",
-						"ruff",
-						"pyright",
-						"ty",
-					},
-					handlers = {
+					"ruff",
+					"pyright",
+					"ty",
+				},
+				handlers = {
 					function(server_name)
 						local server = {}
-						local original_capabilities = vim.lsp.protocol.make_client_capabilities()
-						local capabilities = require("blink.cmp").get_lsp_capabilities(original_capabilities)
 						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-						require("lspconfig")[server_name].setup(server)
+						vim.lsp.config(server_name, server)
 					end,
-					-- Custom handler for remark_ls
-						["remark_ls"] = function()
-						local lspconfig = require("lspconfig")
-						local configs = require("lspconfig.configs")
-						if not configs.remark_ls then
-							configs.remark_ls = {
-								default_config = {
-									cmd = { "remark-language-server", "--stdio" },
-									filetypes = { "markdown" },
-									root_dir = lspconfig.util.root_pattern(
-										".git",
-										".markdownlint.json",
-										".markdownlint.yaml",
-										".markdownlint.yml",
-										".remarkrc",
-										"package.json"
-									),
-									single_file_support = true,
-								},
-							}
-						end
-						lspconfig.remark_ls.setup({
+					["pyright"] = function()
+						vim.lsp.config("pyright", {
+							capabilities = capabilities,
+							single_file_support = true,
 							settings = {
-								remark = {
-									requireConfig = false,
+								python = {
+									analysis = {
+										-- Keep pyright for completion/navigation; ty handles strict typing diagnostics.
+										typeCheckingMode = "off",
+										autoImportCompletions = true,
+										useLibraryCodeForTypes = true,
+										diagnosticMode = "workspace",
+									},
 								},
 							},
 						})
-						end,
-						["pyright"] = function()
-							require("lspconfig").pyright.setup({
-								single_file_support = true,
-								settings = {
-									python = {
-										analysis = {
-											-- Keep pyright for completion/navigation; ty handles strict typing diagnostics.
-											typeCheckingMode = "off",
-											autoImportCompletions = true,
-											useLibraryCodeForTypes = true,
-											diagnosticMode = "workspace",
-										},
-									},
-								},
-							})
-						end,
-						-- Custom handler for lua_ls
-						["lua_ls"] = function()
-						require("lspconfig").lua_ls.setup({
+					end,
+					-- Custom handler for lua_ls
+					["lua_ls"] = function()
+						vim.lsp.config("lua_ls", {
+							capabilities = capabilities,
 							settings = {
 								Lua = {
 									runtime = {
@@ -190,7 +165,8 @@ return {
 					end,
 					-- Custom handler for gopls
 					["gopls"] = function()
-						require("lspconfig").gopls.setup({
+						vim.lsp.config("gopls", {
+							capabilities = capabilities,
 							cmd = { gopls_command },
 							settings = {
 								gopls = {
@@ -201,7 +177,8 @@ return {
 						})
 					end,
 					["yamlls"] = function()
-						require("lspconfig").yamlls.setup({
+						vim.lsp.config("yamlls", {
+							capabilities = capabilities,
 							settings = {
 								yaml = {
 									format = {
@@ -226,28 +203,48 @@ return {
 						})
 					end,
 				},
-				})
+			})
 
-				vim.lsp.config("ty", {
-					cmd = { "ty", "server" },
-					filetypes = { "python" },
-					root_markers = { "ty.toml", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git" },
-					root_dir = function(bufnr, on_dir)
-						local fname = vim.api.nvim_buf_get_name(bufnr)
-						local root = vim.fs.root(fname, {
-							"ty.toml",
-							"pyproject.toml",
-							"setup.py",
-							"setup.cfg",
-							"requirements.txt",
-							".git",
-						})
+			vim.lsp.config("remark_ls", {
+				capabilities = capabilities,
+				root_markers = {
+					".remarkrc",
+					".remarkrc.json",
+					".remarkrc.js",
+					".remarkrc.cjs",
+					".remarkrc.mjs",
+					".remarkignore",
+					".git",
+				},
+				settings = {
+					remark = {
+						requireConfig = false,
+					},
+				},
+			})
+			vim.lsp.enable("remark_ls")
 
-						on_dir(root or vim.fs.dirname(fname))
-					end,
-					single_file_support = true,
-				})
-				vim.lsp.enable("ty")
+			vim.lsp.config("ty", {
+				capabilities = capabilities,
+				cmd = { "ty", "server" },
+				filetypes = { "python" },
+				root_markers = { "ty.toml", "pyproject.toml", "setup.py", "setup.cfg", "requirements.txt", ".git" },
+				root_dir = function(bufnr, on_dir)
+					local fname = vim.api.nvim_buf_get_name(bufnr)
+					local root = vim.fs.root(fname, {
+						"ty.toml",
+						"pyproject.toml",
+						"setup.py",
+						"setup.cfg",
+						"requirements.txt",
+						".git",
+					})
+
+					on_dir(root or vim.fs.dirname(fname))
+				end,
+				single_file_support = true,
+			})
+			vim.lsp.enable("ty")
 			end,
 		},
 }
