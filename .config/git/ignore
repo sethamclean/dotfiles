@@ -78,3 +78,5 @@ pkg/
 
 # Don't Ignore
 !dotfiles/
+
+**/.claude/settings.local.json

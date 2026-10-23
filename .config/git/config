@@ -121,12 +121,11 @@
 [rerere]
 	enabled = 1
 
-[url "git@github.com:example-org/"]
-	insteadOf = "idx:"
-
-[url "git@github.com:example-team/"]
-	insteadOf = "is:"
-
 [user]
-	email = 379763+sethamclean@users.noreply.github.com
 	name = Seth McLean
+
+# Work identity, org URL aliases, and other machine-specific settings live in
+# an untracked file installed by a private overlay. Git ignores the include if
+# the file is missing.
+[include]
+	path = ~/.config/git/local.gitconfig

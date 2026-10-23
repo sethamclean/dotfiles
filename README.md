@@ -45,6 +45,17 @@ Seth McLean's dotfiles
    ./bootstrap.sh
    ```
 
+## Machine-Local Git Config
+
+`.config/git/config` holds shared settings only. It includes
+`~/.config/git/local.gitconfig`, which is not tracked, for work identity, org
+URL aliases, and other machine-specific settings. Git skips the include when
+the file is missing.
+
+`bootstrap.sh` does not create it. A private overlay (for example a codespace
+repo's post-create script) can drop it in place after the dotfiles bootstrap.
+In Codespaces, `user.email` also comes from `/etc/gitconfig`.
+
 ## Global Python Tooling Config
 
 These dotfiles include global config files for `ty` and `ruff`:
@@ -59,111 +70,26 @@ They are managed from this repo at:
 
 Project-level config still takes precedence when present (for example, a local `ty.toml`, `pyproject.toml`, or `ruff.toml` in a project).
 
-## Jira ACLI Wrapper
+## Claude Code Config
 
-The `bin/jira-acli` script wraps `acli jira` with consistent auth/context and agent-friendly help.
+These dotfiles manage Claude Code's user-level config:
 
-### Environment
+- `~/.claude/settings.json` - user settings
+- `~/.claude/CLAUDE.md` - global instructions loaded in every session
+- `~/.claude/themes/catppuccin.json` - custom theme matching OpenCode's `catppuccin`, selected as
+  `custom:catppuccin`
 
-- `JIRA_USERNAME` (required)
-- `JIRA_API` (required)
-- `JIRA_SERVER` (optional, defaults to `https://example.atlassian.net`)
+They are managed from this repo under `.claude/`. Stow links individual files (`--no-folding`), so runtime
+state in `~/.claude/` (credentials, history, projects, sessions, plugins)
+stays local and untracked.
 
-### Help and metadata
-
-- `jira-acli --help` for deterministic human-readable help sections.
-- `jira-acli --help-json` for machine-readable command metadata.
-
-### Common usage
-
-```bash
-jira-acli issue PROJ-201
-jira-acli project
-jira-acli jql "project = PROJ ORDER BY updated DESC"
-jira-acli create --project PROJ --type Story --summary "Add wrapper"
-jira-acli update PROJ-201 --priority High --labels platform,automation
-jira-acli transitions PROJ-201
-jira-acli status PROJ-201 "In Progress"
-```
-
-### Notes
-
-- Wrapper-managed commands default to JSON output; use `--text` for pretty-printed JSON.
-- `raw` passes arguments directly to `acli jira` while still injecting `--server`, `--user`, and `--token`.
-- `--dry-run` prints resolved commands with token values redacted.
-
-## Terraform Cloud CLI Helper
-
-The `bin/tfc-cli` script provides read-only Terraform Cloud visibility scoped to
-project `example-project`.
-
-### Environment
-
-- `TFC_RO` (required)
-- `TFC_ORG` (optional, defaults to `example`)
-- `TFC_BASE_URL` (optional, defaults to `https://app.terraform.io`)
-
-### Commands
-
-- `tfc-cli workspaces [--limit N]`
-- `tfc-cli runs [--workspace NAME] [--limit N]`
-- `tfc-cli errors [--workspace NAME] [--limit N]`
-- `tfc-cli attention [--workspace NAME] [--limit N]`
-- `tfc-cli plan-analyze [--plan PLAN_ID | --run RUN_ID | --workspace NAME --latest]`
-- `tfc-cli plan-log [--plan PLAN_ID | --run RUN_ID | --workspace NAME --latest] [--raw]`
-- `tfc-cli workspace-impact [--limit N]`
-- `tfc-cli run <RUN_ID>`
-- `tfc-cli plan <PLAN_ID>`
-- `tfc-cli apply <APPLY_ID>`
-
-Use `--json` with any command to output raw API payload JSON.
-
-Use `--markdown` with `tfc-cli plan-analyze` for one-workspace review output
-that is easy to paste into PRs or Slack.
-
-Use `tfc-cli plan-log` to view the actual Terraform plan log output:
-- default renders a focused summary (planned changes + drift) then full human-readable log messages
-- `--raw` prints newline-delimited Terraform JSON log events
-- `--json` prints parsed JSON array of plan log events
-
-`tfc-cli attention` reasons:
-- `error` - run status is `errored`, `failed`, or canceled variants
-- `pending_run` - run status is `pending`
-- `pending_apply` - non-speculative run with changes waiting for confirm/apply
-- `speculative_plan_changes` - speculative (`plan-only`) run found changes
-
-`tfc-cli plan-analyze` and `tfc-cli workspace-impact` support gating flags:
-- `--fail-on-non-import`
-- `--fail-on-drift`
-
-`tfc-cli plan-analyze` also supports strict classification:
-- `--strict` uses plan JSON output to classify exact changed attributes
-- distinguishes import-only vs repo archived-only flips vs unexpected config/ruleset/non-repo changes
-- excludes `actions=["no-op"]` from strict unexpected counts
-- includes `safe_to_apply_strict` in JSON/markdown/text output
-
-If a selected gate condition is found, command exits non-zero.
-
-### Examples
+Claude Code creates a real `~/.claude/settings.json` on first run, which
+conflicts with the stow link. Move it aside before running `./bootstrap.sh`:
 
 ```bash
-tfc-cli workspaces
-tfc-cli runs --limit 20
-tfc-cli runs --workspace workspace-c --limit 10
-tfc-cli errors --workspace workspace-a --limit 30
-tfc-cli attention --limit 100
-tfc-cli attention --workspace workspace-a --limit 50
-tfc-cli attention --reason pending_apply --limit 100
-tfc-cli plan-analyze --workspace workspace-a --latest
-tfc-cli plan-analyze --workspace workspace-a --latest --strict
-tfc-cli --markdown plan-analyze --workspace workspace-a --latest
-tfc-cli plan-log --workspace workspace-a --latest
-tfc-cli plan-log --run run-abc123 --raw
-tfc-cli --json plan-log --plan plan-def456
-tfc-cli plan-analyze --run run-abc123 --fail-on-drift
-tfc-cli workspace-impact --limit 100 --fail-on-non-import --fail-on-drift
-tfc-cli run run-abc123
-tfc-cli plan plan-def456
-tfc-cli apply apply-ghi789
-tfc-cli --json runs --workspace workspace-b --limit 5
+mv ~/.claude/settings.json ~/.claude/settings.json.backup.$(date +%Y%m%d%H%M%S)
 ```
+
+`~/.claude/settings.json` is the only user-level settings file; there is no
+user-level `settings.local.json`. Per-project personal overrides go in
+`<repo>/.claude/settings.local.json`, which stays out of git.

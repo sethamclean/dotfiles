@@ -14,26 +14,7 @@
         "skill": {
           "research-brief": "allow",
           "ci-triage": "allow",
-          "local-agent-tools-usage": "allow",
-          "jira-task-ops": "allow"
-        }
-      }
-    },
-    "jira-ops": {
-      "description": "Run Jira task operations via jira-acli in delegated subtask mode",
-      "mode": "subagent",
-      "prompt": "You are a Jira operations subagent.\n\nExecution rules:\n- Use the `jira-acli` binary for all Jira operations.\n- Never run the `jira` binary.\n- Prefer `jira-acli --text` output for readable results.\n- For backlog/list outputs, return compact rows with `issueKey`, `summary`, `status`, and `url` (optional `updated`).\n- Start read-only unless the user explicitly requested a mutation.\n- If `jira-acli` is unavailable, stop and report that exact blocker.",
-      "color": "#458588",
-      "environment": {
-        "PATH": "{env:HOME}/bin:{env:HOME}/.local/bin:{env:PATH}"
-      },
-      "permission": {
-        "skill": {
-          "*": "deny",
-          "jira-task-ops": "allow"
-        },
-        "task": {
-          "*": "deny"
+          "local-agent-tools-usage": "allow"
         }
       }
     },
