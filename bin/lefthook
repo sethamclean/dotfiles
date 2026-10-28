@@ -6,4 +6,4 @@ if [[ "$1" == "install" ]]; then
   exit 1
 fi
 # Forward all other commands to the real lefthook
-command /root/.nix-profile/bin/lefthook "$@"
+command "$HOME/.nix-profile/bin/lefthook" "$@"

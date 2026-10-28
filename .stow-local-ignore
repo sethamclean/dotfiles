@@ -4,3 +4,7 @@
 README\.md
 bootstrap\.sh
 
+CLAUDE-ROADMAP\.md
+^/AGENTS\.md$
+^/CLAUDE\.md$
+^/\.gitignore$

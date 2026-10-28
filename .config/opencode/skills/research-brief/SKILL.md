@@ -1,6 +1,6 @@
 ---
 name: research-brief
-description: Run evidence-first research using Context7 first, then SearXNG fallback, and return concise findings.
+description: Run evidence-first research using Context7 first, then other primary sources, and return concise findings.
 compatibility: opencode
 ---
 
@@ -14,7 +14,8 @@ compatibility: opencode
 
 1. Restate the research question and success criteria.
 2. Query Context7 first for official documentation and examples.
-3. If gaps remain, use SearXNG to find primary sources.
+3. If gaps remain, consult other primary sources, such as official sites and
+   source repositories.
 4. Separate observations from hypotheses.
 5. Synthesize a recommendation with explicit uncertainty.
 

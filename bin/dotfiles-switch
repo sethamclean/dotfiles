@@ -1,0 +1,223 @@
+#!/usr/bin/env zsh
+
+# Point the live home symlinks at one worktree of this dotfiles repo.
+#
+# Stow will not take over links that point into another tree, so a switch is
+# "unstow every other worktree, then stow the target". Home may be mixed (some
+# links in one worktree, some in another); ownership is read per link.
+#
+# Usage:
+#   dotfiles-switch                    show which worktree owns how many links
+#   dotfiles-switch <target>           dry run: show what a switch would do
+#   dotfiles-switch <target> --apply   do it
+# <target> is a worktree path or directory name, a branch name, or `main`.
+
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
+die() {
+  print -u2 -- "${RED}❌ $*${NC}"
+  exit 1
+}
+
+here=${0:A:h:h}
+[[ -e $here/.git ]] || die "not inside a dotfiles checkout: $here"
+
+# Parallel arrays: worktree paths and their branches.
+typeset -a wt_paths wt_branches
+while IFS= read -r line; do
+  case $line in
+    "worktree "*) wt_paths+=("${line#worktree }"); wt_branches+=("(detached)") ;;
+    "branch "*) wt_branches[-1]=${line#branch refs/heads/} ;;
+  esac
+done < <(git -C "$here" worktree list --porcelain)
+(( ${#wt_paths} > 0 )) || die "no worktrees found for $here"
+
+# Run stow from inside a tree, as bootstrap.sh does. Output includes stderr.
+stow_in() {
+  local tree=$1
+  shift
+  (cd "$tree" && stow --no-folding --target="$HOME" "$@" . 2>&1)
+}
+
+# Paths in $HOME that a tree currently owns (what unstowing it would remove).
+owned_links() {
+  stow_in "$1" -n -v -D | sed -n 's/^UNLINK: //p'
+}
+
+# Print the index in wt_paths matching $1, or nothing.
+find_worktree() {
+  local want=$1 i
+  for i in {1..${#wt_paths}}; do
+    if [[ $want == $wt_paths[$i] || $want == ${wt_paths[$i]:t} || $want == $wt_branches[$i] ]]; then
+      print -r -- "$i"
+      return 0
+    fi
+  done
+  [[ $want == main ]] && return 1
+  return 1
+}
+
+show_status() {
+  local i n
+  print "Worktrees of ${wt_paths[1]:t} and the home links each owns:"
+  for i in {1..${#wt_paths}}; do
+    n=$(owned_links "$wt_paths[$i]" | wc -l)
+    printf '  %4d  %-28s %s\n' "$n" "$wt_branches[$i]" "$wt_paths[$i]"
+  done
+}
+
+# Run find for symlinks in the dotfiles-managed parts of home whose target
+# matches a find test (extra args), once per worktree root. Prints link paths.
+find_links() {
+  local root dir depth
+  for dir in "$HOME" "$HOME/.claude" "$HOME/.config" "$HOME/bin" "$HOME/.local/bin"; do
+    [[ -d $dir ]] || continue
+    depth=6
+    [[ $dir == $HOME ]] && depth=1
+    for root in "${wt_paths[@]}"; do
+      find "$dir" -maxdepth $depth -type l "$@" -lname "${root}/*" 2>/dev/null
+    done
+  done | sort -u
+}
+
+# Dangling links in home that point into any worktree.
+dangling_links() {
+  find_links -xtype l
+}
+
+# Absolute links into a worktree, made by hand rather than by stow. Stow does
+# not recognize them as its own, so they are removed before stowing.
+legacy_links() {
+  find_links
+}
+
+if (( $# == 0 )); then
+  show_status
+  exit 0
+fi
+
+target_arg=$1
+apply=0
+[[ ${2:-} == --apply ]] && apply=1
+(( $# <= 2 )) || die "usage: dotfiles-switch [<target> [--apply]]"
+[[ -z ${2:-} || $apply == 1 ]] || die "unknown option: $2"
+
+if [[ $target_arg == main ]]; then
+  idx=$(find_worktree main) || die "no worktree has branch main"
+else
+  idx=$(find_worktree "$target_arg") || die "no worktree matches '$target_arg' (try: dotfiles-switch)"
+fi
+target=$wt_paths[$idx]
+
+# Other worktrees that currently own links.
+typeset -a owners
+for i in {1..${#wt_paths}}; do
+  [[ $wt_paths[$i] == $target ]] && continue
+  [[ -n $(owned_links "$wt_paths[$i]") ]] && owners+=("$wt_paths[$i]")
+done
+
+print "Target: $wt_branches[$idx] ($target)"
+if (( ${#owners} == 0 )); then
+  print "No other worktree owns links."
+else
+  for o in "${owners[@]}"; do
+    links=$(owned_links "$o")
+    print "Unstow $o: $(print -r -- "$links" | wc -l) link(s), e.g."
+    print -r -- "$links" | head -3 | sed 's/^/  UNLINK /'
+  done
+fi
+
+legacy=$(legacy_links)
+if [[ -n $legacy ]]; then
+  print "Remove $(print -r -- "$legacy" | wc -l) absolute link(s) into worktrees (not stow-owned), e.g."
+  print -r -- "$legacy" | head -3 | sed 's/^/  RM /'
+fi
+
+# Dry run of the target. Conflicts with links we are about to unstow or remove
+# are expected, so only report conflicts that would still exist afterwards.
+plan=$(stow_in "$target" -n -v)
+typeset -a real_conflicts
+while IFS= read -r line; do
+  [[ $line == "  * "* ]] || continue
+  rel=${line##*: }
+  resolved=$(readlink -f "$HOME/$rel" 2>/dev/null)
+  expected=0
+  for o in "${wt_paths[@]}"; do
+    [[ -L $HOME/$rel && $resolved == $o/* ]] && expected=1
+  done
+  (( expected )) || real_conflicts+=("$line")
+done <<< "$plan"
+print "Then stow $target (checked for conflicts below)."
+
+if (( ${#real_conflicts} > 0 )); then
+  print -u2 -- "${RED}Conflicts that a switch would not resolve:${NC}"
+  printf '%s\n' "${real_conflicts[@]}" >&2
+  die "fix these first (move the real files aside)"
+fi
+
+for o in "${owners[@]}" "$target"; do
+  [[ -n $(git -C "$o" status --porcelain 2>/dev/null) ]] &&
+    print "${YELLOW}Note: $o has uncommitted changes (links are removed, files are kept).${NC}"
+done
+
+if (( ! apply )); then
+  print "Dry run only. Re-run with --apply to switch."
+  exit 0
+fi
+
+# Remember legacy links so a failed switch can put them back.
+typeset -A legacy_targets
+while IFS= read -r l; do
+  [[ -n $l ]] && legacy_targets[$l]=$(readlink "$l")
+done <<< "$legacy"
+restore_legacy() {
+  local l
+  for l in "${(@k)legacy_targets}"; do
+    ln -sfn "$legacy_targets[$l]" "$l"
+  done
+}
+
+for l in "${(@k)legacy_targets}"; do
+  rm -- "$l"
+done
+typeset -a unstowed
+for o in "${owners[@]}"; do
+  if ! stow_in "$o" -D > /dev/null; then
+    restore_legacy
+    die "unstow failed for $o; restored legacy links"
+  fi
+  unstowed+=("$o")
+done
+if ! out=$(stow_in "$target"); then
+  print -u2 -- "$out"
+  restore_legacy
+  for o in "${unstowed[@]}"; do
+    stow_in "$o" > /dev/null || print -u2 -- "${RED}rollback failed for $o${NC}"
+  done
+  die "stow failed for $target; restored previous owners"
+fi
+
+# Verify.
+rc=0
+for i in {1..${#wt_paths}}; do
+  [[ $wt_paths[$i] == $target ]] && continue
+  left=$(owned_links "$wt_paths[$i]")
+  if [[ -n $left ]]; then
+    print -u2 -- "${RED}❌ $wt_paths[$i] still owns links:${NC}\n$left"
+    rc=1
+  fi
+done
+dangling=$(dangling_links)
+if [[ -n $dangling ]]; then
+  print -u2 -- "${RED}❌ Dangling links into a worktree:${NC}\n$dangling"
+  rc=1
+fi
+(( rc == 0 )) && print "${GREEN}✓ Home links now point at $target${NC}"
+
+svc=$HOME/.local/state/opencode/service.json
+[[ -f $svc ]] &&
+  print "Restart the OpenCode background service so it reloads config (pid: $(sed -n 's/.*"pid":\([0-9]*\).*/\1/p' "$svc"))."
+exit $rc

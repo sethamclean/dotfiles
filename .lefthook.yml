@@ -14,6 +14,10 @@ pre-commit:
       exclude: "(.git/|node_modules/)"
       run: .hook-scripts/check-secrets.zsh
 
+    check-agent-sync:
+      glob: "{.claude/agents,.config/opencode/agents}/*.md"
+      run: .hook-scripts/check-agent-sync.zsh
+
     check-bootstrap:
       run: ./bootstrap.sh
 
