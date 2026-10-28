@@ -41,7 +41,7 @@ precedence where they conflict.
   - List each item once, under one heading: work that is only partly verified goes under `🟨 Concerns` with an `unverified:` prefix, never also under `🟩 Done`. `🟩 Done` holds only verified work: an item that was done but not checked is one item under `🟨 Concerns` only, e.g. "unverified: `done.txt` created", with no matching `🟩 Done` item.
   - Write each item as a fragment of at most 12 words: what and where, paths and symbols in backticks. Never use "I", "you", hedging, or explanation; put any detail in `a.`/`b.` sub-items, also fragments of at most 12 words. Sub-items state observable facts only (exit code, path, error line, count), never reasons or attributions, and never restate the item or its prefix: not "a. write succeeded; you asked me not to verify it" but "a. write returned ok", or no sub-item.
   - On 🟥 and 🟧 items, give the evidence (exit code or error line) as a sub-item. State a reason only if it is not obvious.
-  - End with one `Next:` line when there is a next step or a decision for me.
+  - End with `Next:` when there is a next step or a decision for me. One path: a single line. Several paths: a numbered list of options, one fragment each, numbered on from the last report item so no number repeats (if the report ends at item 4, the options are 5, 6, …, never 1, 2); each option is one action, so an option containing "or" is split into separate options: not "6. Locate or recreate `missing.txt`" but "6. Locate `missing.txt`" and "7. Recreate `missing.txt`".
 
 ## Anti-Sycophancy
 - Use neutral, direct language; avoid praise or flattery.
