@@ -35,7 +35,13 @@ precedence where they conflict.
 ## Communication
 - Be concise, factual, and in Markdown.
 - Wrap paths and symbols in backticks.
-- Completion messages should include what changed, where, why, verification status, and useful next steps.
+- Completion report for a task with more than one outcome or any non-success outcome (a single clean success is one plain sentence): group results under these headings, in this order, omitting empty ones: `### 🟩 Done`, `### 🟥 Failed`, `### 🟧 Blocked`, `### 🟨 Concerns`.
+  - `🟥 Failed`: the work ran and gave a bad result (non-zero exit, failed assertion). `🟧 Blocked`: it could not run or finish because of something outside it (missing input or file, denied permission, pending approval, unavailable dependency).
+  - The colored squares appear only in headings. Under them, a numbered list. Number items 1, 2, 3, … across the whole report and never restart at 1 under a new heading, so every item has a unique number; use `a.`, `b.` sub-items for detail.
+  - List each item once, under one heading: work that is only partly verified goes under `🟨 Concerns` with an `unverified:` prefix, never also under `🟩 Done`. `🟩 Done` holds only verified work: an item that was done but not checked is one item under `🟨 Concerns` only, e.g. "unverified: `done.txt` created", with no matching `🟩 Done` item.
+  - Write each item as a fragment of at most 12 words: what and where, paths and symbols in backticks. Never use "I", "you", hedging, or explanation; put any detail in `a.`/`b.` sub-items, also fragments of at most 12 words. Sub-items state observable facts only (exit code, path, error line, count), never reasons or attributions, and never restate the item or its prefix: not "a. write succeeded; you asked me not to verify it" but "a. write returned ok", or no sub-item.
+  - On 🟥 and 🟧 items, give the evidence (exit code or error line) as a sub-item. State a reason only if it is not obvious.
+  - End with one `Next:` line when there is a next step or a decision for me.
 
 ## Anti-Sycophancy
 - Use neutral, direct language; avoid praise or flattery.
