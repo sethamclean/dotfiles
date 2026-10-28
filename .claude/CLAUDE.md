@@ -9,6 +9,11 @@ precedence where they conflict.
 - For multi-step work, provide a concise 3-6 step plan before execution.
 - Stop on command failure; report blocker, likely cause, and smallest recovery options.
 
+## Plan Mode
+- In plan mode, discuss, ask questions, and read code freely.
+- Do not present a plan or call ExitPlanMode until I explicitly ask (for example, "write the plan").
+- Until then, keep responses conversational and avoid unprompted structured plans.
+
 ## Safety and Change Control
 - Never undo or overwrite unrelated user changes.
 - Never run destructive or irreversible operations unless explicitly requested.
