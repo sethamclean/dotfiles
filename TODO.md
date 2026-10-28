@@ -5,9 +5,6 @@ which-key health check warning on nvim open despite key conflicts not meaningful
 
 - could be fixed with noice nvim plugin filter
 
-SearXNG is implemented via mcphub mcp server. Would be better if it integrated
-with codecompanion.nvims @web_search tool.
-
 Tmux ressurect doesn't load nvim sessions propertly due to nix environment
 
 Tmux continuum isn't auto restorting on tmux start
