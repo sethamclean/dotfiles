@@ -14,9 +14,8 @@ compatibility: opencode
 
 1. Prefer existing `agent-*` tools before ad hoc commands.
 2. If modifying `agent-*` scripts, update `~/bin/agent-tools.yaml` in the same change.
-3. Update `.config/opencode/AGENTS.md` Local Agent Tools section in the same change.
-4. Ensure script `--help` includes usage, args, env vars, safety mode, and examples.
-5. Keep default behavior read-only unless explicitly instructed otherwise.
+3. Ensure script `--help` includes usage, args, env vars, safety mode, and examples.
+4. Keep default behavior read-only unless explicitly instructed otherwise.
 
 ## Output contract
 
