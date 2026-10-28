@@ -1,0 +1,3 @@
+# The global ignore file (.config/git/ignore) ignores bin/ as build output.
+# In this repository bin/ holds scripts that are stowed into ~/bin.
+!bin/

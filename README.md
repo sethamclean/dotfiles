@@ -93,3 +93,19 @@ mv ~/.claude/settings.json ~/.claude/settings.json.backup.$(date +%Y%m%d%H%M%S)
 `~/.claude/settings.json` is the only user-level settings file; there is no
 user-level `settings.local.json`. Per-project personal overrides go in
 `<repo>/.claude/settings.local.json`, which stays out of git.
+
+## Testing changes from a worktree
+
+The live home links point at exactly one worktree at a time. `bin/dotfiles-switch`
+moves them without restowing by hand:
+
+```bash
+dotfiles-switch                       # which worktree owns how many links
+dotfiles-switch feat/my-branch        # dry run
+dotfiles-switch feat/my-branch --apply
+dotfiles-switch main --apply          # cut over after merging; then remove the worktree
+```
+
+It unstows every other worktree, removes hand-made absolute links into a
+worktree, stows the target, and checks for dangling links. Restart OpenCode's
+background service afterwards so it reloads config.
