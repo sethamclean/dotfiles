@@ -30,6 +30,7 @@ precedence where they conflict.
 - Separate observations from hypotheses; identify unknowns.
 - Verify important changes with focused checks (tests/lint/build or file-level validation).
 - If verification is incomplete, state what was not verified, why, and minimal next command(s).
+- When only a command's success matters (tests, lint, build, typecheck, install, other side-effect commands), run it as `quiet <purpose> <command> [args...]`, e.g. `quiet tests npm test`; wrap pipelines and `&&` chains in `sh -c '...'`. It prints nothing on success; on failure it prints the exit status, the log path and the log tail, and exits with the command's status. On failure, diagnose from that log instead of rerunning the command. Do not probe for `quiet` first. Only if it fails with `command not found`, redirect to a fixed absolute path (`<scratchpad>/<purpose>.log`, else `${TMPDIR:-/tmp}/<purpose>.log`, never the working directory) and print the tail only on failure: `cmd >"<path>" 2>&1 || { echo "exit=$?"; tail -n 50 "<path>"; }`. Run commands directly when their output is the point (`git status`, `grep`, reading files).
 
 ## Communication
 - Be concise, factual, and in Markdown.

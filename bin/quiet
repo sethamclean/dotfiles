@@ -1,0 +1,45 @@
+#!/usr/bin/env zsh
+
+# Run a command with its output sent to a log. Print nothing on success. On
+# failure, print the exit status, the log path and the end of the log, then exit
+# with the command's own status. Meant for checks where only the result matters
+# (tests, lint, build, install).
+#
+# Usage: quiet <purpose> <command> [args...]
+#   <purpose>        names the log; letters, digits, '.', '_' and '-' only
+# Environment:
+#   QUIET_LOG_DIR    log directory (default ${TMPDIR:-/tmp}/quiet-$USER/<dir>-<hash>,
+#                    one per working directory, so projects do not share logs)
+#   QUIET_TAIL       lines of the log to show on failure (default 50)
+
+die() {
+  print -u2 -- "quiet: $*"
+  exit 2
+}
+
+(( $# >= 2 )) || die "usage: quiet <purpose> <command> [args...]"
+
+purpose=$1
+shift
+[[ $purpose =~ '^[A-Za-z0-9._-]+$' ]] || die "invalid purpose: $purpose"
+
+if [[ -n $QUIET_LOG_DIR ]]; then
+  log_dir=$QUIET_LOG_DIR
+else
+  root=${TMPDIR:-/tmp}/quiet-${USER:-$UID}
+  mkdir -p -m 700 -- "$root" || die "cannot create $root"
+  [[ -O $root ]] || die "not owned by you: $root"
+  log_dir=$root/${PWD:t}-$(print -rn -- "$PWD" | cksum | cut -d' ' -f1)
+fi
+mkdir -p -m 700 -- "$log_dir" || die "cannot create $log_dir"
+[[ -O $log_dir ]] || die "not owned by you: $log_dir"
+log=$log_dir/$purpose.log
+
+"$@" > "$log" 2>&1
+rc=$?
+
+if (( rc != 0 )); then
+  print -u2 -- "quiet: $purpose failed (exit $rc); log: $log"
+  tail -n "${QUIET_TAIL:-50}" -- "$log" >&2
+fi
+exit $rc
