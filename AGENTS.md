@@ -4,9 +4,10 @@ Seth's dotfiles, deployed into `$HOME` with GNU Stow. This repository is public:
 nothing company- or repository-specific belongs here.
 
 `.claude/CLAUDE.md` is the _global_ agent rules file that gets stowed into `~`.
-OpenCode has no copy: it falls back to `~/.claude/CLAUDE.md` when
-`~/.config/opencode/AGENTS.md` does not exist, so do not add one. This file is
-the guidance for working _on_ this repository.
+OpenCode has no copy: `.config/opencode/opencode.jsonc` lists
+`~/.claude/CLAUDE.md` under `instructions` (OpenCode 2.1.1 did not apply its
+documented fallback to that file), so do not add a `~/.config/opencode/AGENTS.md`.
+This file is the guidance for working _on_ this repository.
 
 ## Layout
 

@@ -2,6 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   // Communication policy: keep assistant tone neutral and non-sycophantic.
   "default_agent": "plan",
+  // Share the Claude Code global rules; OpenCode keeps no copy of its own.
+  "instructions": ["~/.claude/CLAUDE.md"],
   // Rules are evaluated in order and the last match wins.
   "permissions": [
     // Skills and workstream files live outside the project directory.
