@@ -2,47 +2,44 @@
   "$schema": "https://opencode.ai/config.json",
   // Communication policy: keep assistant tone neutral and non-sycophantic.
   "default_agent": "plan",
-  "permission": {
-    "skill": {
-      "*": "deny"
-    }
-  },
-  "agent": {
+  // Rules are evaluated in order and the last match wins.
+  "permissions": [
+    // Skills and workstream files live outside the project directory.
+    { "action": "external_directory", "resource": "~/.claude/*", "effect": "allow" },
+    { "action": "read", "resource": "~/.claude/*", "effect": "allow" },
+    { "action": "external_directory", "resource": "~/.llm-workstreams/*", "effect": "allow" },
+    { "action": "read", "resource": "~/.llm-workstreams/*", "effect": "allow" },
+  ],
+  "agents": {
     "plan": {
       "color": "#b8bb26",
-      "permission": {
-        "skill": {
-          "research-brief": "allow",
-          "ci-triage": "allow",
-          "local-agent-tools-usage": "allow"
-        }
-      }
     },
     "build": {
       "color": "#fb4934",
-      "tools": {
-        "skill": false
-      }
     },
   },
-  "plugin": [
-    "@tarquinen/opencode-dcp@latest"
-  ],
+  "plugins": [],
   "mcp": {
-    "context7": {
-      "type": "local",
-      "command": [
-        "docker",
-        "run",
-        "--rm",
-        "-i",
-        "node:22-alpine",
-        "npx",
-        "-y",
-        "@upstash/context7-mcp"
-      ],
-      "enabled": true
+    "servers": {
+      "context7": {
+        "type": "local",
+        "command": [
+          "docker",
+          "run",
+          "--rm",
+          "-i",
+          "node:22-alpine",
+          "npx",
+          "-y",
+          "@upstash/context7-mcp",
+        ],
+        "disabled": false,
+      },
+      "codebase-memory-mcp": {
+        "type": "local",
+        "command": ["codebase-memory-mcp"],
+        "disabled": false,
+      },
     },
-
   },
 }
