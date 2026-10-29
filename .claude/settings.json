@@ -1,10 +1,16 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "syncClaudeAiSkills": false,
   "env": {
     "CLAUDE_CODE_TMUX_TRUECOLOR": "1"
   },
+  "permissions": {
+    "defaultMode": "plan"
+  },
   "disableClaudeAiConnectors": true,
-  "syncClaudeAiSkills": false,
+  "enabledPlugins": {
+    "cowork-plugin-management@synced": false
+  },
   "skillOverrides": {
     "anthropic-skills:docx": "off",
     "anthropic-skills:pptx": "off",
@@ -13,12 +19,10 @@
     "anthropic-skills:import-memory": "off",
     "anthropic-skills:xlsx": "user-invocable-only"
   },
-  "permissions": {
-    "defaultMode": "plan"
-  },
-  "theme": "custom:catppuccin",
   "statusLine": {
     "type": "command",
     "command": "~/.claude/statusline.sh"
-  }
+  },
+  "autoMemoryEnabled": false,
+  "theme": "custom:catppuccin"
 }

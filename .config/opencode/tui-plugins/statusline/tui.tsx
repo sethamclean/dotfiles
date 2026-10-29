@@ -3,8 +3,8 @@ import { execFile } from "node:child_process"
 import { basename } from "node:path"
 import { promisify } from "node:util"
 import { createEffect, createMemo, createSignal, onCleanup, Show } from "solid-js"
-import type { AssistantMessage } from "@opencode-ai/sdk/v2"
-import type { TuiPluginApi, TuiPluginModule } from "@opencode-ai/plugin/tui"
+import type { SessionMessageAssistant } from "@opencode/client"
+import { Plugin, usePlugin } from "@opencode/plugin/tui"
 
 const exec = promisify(execFile)
 
@@ -34,30 +34,34 @@ async function gitStatus(directory: string) {
   }
 }
 
-function StatusLine(props: { api: TuiPluginApi; sessionID: string }) {
-  const api = props.api
-  const theme = () => api.theme.current
+function StatusLine(props: { sessionID: string }) {
+  const api = usePlugin()
+  const location = createMemo(() =>
+    api.data.session.get(props.sessionID)?.location ?? api.location ?? api.data.location.default(),
+  )
   const [git, setGit] = createSignal("")
   const last = createMemo(() =>
-    api.state.session.messages(props.sessionID).findLast(
-      (message): message is AssistantMessage =>
-        message.role === "assistant" && message.tokens.output > 0,
+    api.data.session.message.list(props.sessionID).findLast(
+      (message): message is SessionMessageAssistant =>
+        message.type === "assistant" && (message.tokens?.output ?? 0) > 0,
     ),
   )
   const context = createMemo(() => {
     const message = last()
-    if (!message) return undefined
+    if (!message?.tokens) return undefined
     const tokens = message.tokens
     const used = tokens.input + tokens.output + tokens.reasoning + tokens.cache.read + tokens.cache.write
-    const model = api.state.provider.find((provider) => provider.id === message.providerID)?.models[message.modelID]
+    const model = api.data.location.model.list(location())?.find((model) =>
+      model.providerID === message.model.providerID && model.id === message.model.id,
+    )
     return model?.limit.context ? Math.round((used / model.limit.context) * 100) : undefined
   })
   const contextColor = () => {
     const percent = context()
-    if (percent === undefined) return theme().textMuted
-    if (percent < 30) return theme().success
+    if (percent === undefined) return api.theme.text.muted
+    if (percent < 30) return api.theme.text.feedback.success.base
     if (percent < 50) return "#fab387" // Catppuccin peach/orange
-    return theme().error
+    return api.theme.text.feedback.error.base
   }
   const cache = createMemo(() => {
     const tokens = last()?.tokens
@@ -65,12 +69,8 @@ function StatusLine(props: { api: TuiPluginApi; sessionID: string }) {
     const input = tokens.input + tokens.cache.read + tokens.cache.write
     return input > 0 ? Math.round((tokens.cache.read / input) * 100) : undefined
   })
-  const directory = createMemo(() =>
-    api.state.session.get(props.sessionID)?.directory ?? last()?.path.cwd ?? api.state.path.directory,
-  )
-
   createEffect(() => {
-    const cwd = directory()
+    const cwd = location().directory
     let active = true
     let pending = false
     setGit("")
@@ -97,35 +97,22 @@ function StatusLine(props: { api: TuiPluginApi; sessionID: string }) {
       <text fg={contextColor()} wrapMode="none">
         {"ctx   "}{bar(context(), 20)} {context() === undefined ? "—" : `${context()}%`}
       </text>
-      <text fg={theme().textMuted} wrapMode="none">
+      <text fg={api.theme.text.muted} wrapMode="none">
         {"use   "}{bar(cache(), 10)} cache hit {cache() === undefined ? "—" : `${cache()}%`}
       </text>
       <Show when={git()}>
-        <text fg={theme().textMuted} wrapMode="none">{"git   "}{git()}</text>
+        <text fg={api.theme.text.muted} wrapMode="none">{"git   "}{git()}</text>
       </Show>
     </box>
   )
 }
 
-export default {
+export default Plugin.define({
   id: "seth.statusline",
-  async tui(api) {
-    const sessionID = () => {
-      const route = api.route.current
-      return route.name === "session" && "params" in route && typeof route.params?.sessionID === "string"
-        ? route.params.sessionID
-        : undefined
-    }
-    api.slots.register({
-      slots: {
-        app_bottom() {
-          return (
-            <Show when={sessionID()} keyed>
-              {(id) => <StatusLine api={api} sessionID={id} />}
-            </Show>
-          )
-        },
-      },
+  setup(api) {
+    return api.ui.slot({
+      append: "session.composer.top",
+      render: (props) => <StatusLine sessionID={props.sessionID} />,
     })
   },
-} satisfies TuiPluginModule
+})
