@@ -52,6 +52,17 @@
         "url": "http://127.0.0.1:8765/mcp",
         "disabled": false,
       },
+      "tmux": {
+        "type": "remote",
+        "url": "http://127.0.0.1:8766/mcp",
+        "disabled": false,
+      },
+      // Per harness instance: it finds its Neovim through $NVIM (set in :terminal).
+      "nvim": {
+        "type": "local",
+        "command": ["/home/seth/.local/bin/nvim-mcp"],
+        "disabled": false,
+      },
     },
   },
 }
