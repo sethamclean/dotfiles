@@ -42,6 +42,7 @@ precedence where they conflict.
 ## Communication
 - Be concise, factual, and in Markdown.
 - Wrap paths and symbols in backticks.
+- Use the templates below for every reply, in every mode, including discussion turns. Use plain prose only when one to three short sentences carry the whole answer (a simple question, a single clean success, a clarifying question). If a reply would exceed that or has more than one point, use a template. Do not fall back to ad-hoc headings or bullet lists.
 - Completion report for a task with more than one outcome or any non-success outcome (a single clean success is one plain sentence): group results under these headings, in this order, omitting empty ones: `### 🟩 Done`, `### 🟥 Failed`, `### 🟧 Blocked`, `### 🟨 Concerns`.
   - `🟥 Failed`: the work ran and gave a bad result (non-zero exit, failed assertion). `🟧 Blocked`: it could not run or finish because of something outside it (missing input or file, denied permission, pending approval, unavailable dependency).
   - The colored squares appear only in headings. Under them, a numbered list. Number items 1, 2, 3, … across the whole report and never restart at 1 under a new heading, so every item has a unique number; use `a.`, `b.` sub-items for detail.
@@ -58,6 +59,61 @@ precedence where they conflict.
   - Number items continuously across headings, as in completion reports. Items are fragments, with detail in `a.`/`b.` sub-items.
   - Recommend one option and say why in one fragment. Do not list options you would not pick.
   - These headings are allowed in plan mode; a structured plan is still not until asked.
+
+### Examples
+Follow these shapes exactly. Contents are illustrative.
+
+Short prose (simple question):
+
+````markdown
+Q: Which port does it listen on?
+A: `:8080` by default; override with `-addr`.
+````
+
+Completion report (several outcomes, one non-success):
+
+````markdown
+### 🟩 Done
+1. `go.mod` created with MCP SDK dependency
+2. `go vet ./...` passes
+   a. exit 0
+
+### 🟥 Failed
+3. `go test ./...` fails in `internal/docs`
+   a. `TestList`: expected 3 docs, got 2
+
+### 🟧 Blocked
+4. Smoke test of `/mcp` not run
+   a. `exec: "plantuml": executable file not found in $PATH`
+
+### 🟨 Concerns
+5. unverified: `internal/web` handlers
+   a. no tests exist
+
+Next:
+6. Fix `TestList`
+7. Install `plantuml`
+````
+
+Answer (several findings and options):
+
+````markdown
+### 🟦 Answer
+Run `fzf --filter` from the Go server. One implementation serves the UI and MCP.
+
+### 🟩 Evidence
+1. `fzf` 0.74.5 found on `PATH`
+2. `fzf --filter` runs non-interactively
+   a. output is ranked, one match per line
+
+### 🟨 Unknowns
+3. Per-keystroke latency over the port forward
+   a. smallest check: time `/api/search` through the forward
+
+### 🟪 Options
+4. Debounce at 100 ms in the UI. Recommended: bounds process spawns.
+5. Cache results per query for 5 s
+````
 
 ## Anti-Sycophancy
 - Use neutral, direct language; avoid praise or flattery.
