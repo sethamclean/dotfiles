@@ -1,0 +1,4 @@
+# One tmux session per worktree (instead of a window in the current session).
+mode: session
+# Closing, removing or merging a worktree returns the client to this session.
+default_session: main
