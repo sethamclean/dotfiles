@@ -50,18 +50,19 @@ existing ADR directory, else `docs/adr/`; a project glossary at the project
 root; a repo-wide glossary at `docs/GLOSSARY.md`. Specifications are also looked
 for under `specs/`.
 
-**Workstream**: A directory `<workstream root>/<workstream-name>/` for one body
-of work across agent conversations, where the workstream root is
-`~/.llm-workstreams/`. It holds `<workstream-name>-handoff.md` (the living
-handoff document), `scratch/` (temporary and intermediate material), and
-`workdirs/` (symlinks to the git working directories involved). `handoff`
-creates and fills it, and `load-handoff` resumes from it. A conversation has an
-active workstream when the user named one or `handoff` or `load-handoff` set one
-up in it. _Avoid_: session (a harness session or conversation is not a
-workstream)
+**Task**: One unit of work in its own git worktree, with the worktree's branch
+and, under `workmux`, its tmux window. Its name is the worktree's directory name
+(the `workmux` handle). It holds `.handoff/handoff.md` (the living handoff
+document) and `.handoff/scratch/` (temporary and intermediate material) at the
+worktree root, untracked and excluded through `.git/info/exclude`. They are
+deleted with the worktree. `handoff` creates and fills them, and `load-handoff`
+resumes from them. A conversation has an active Task when it works in a
+worktree or `load-handoff` set one up in it. Work across Tasks happens only when
+the user says so; the handoff then lists the other Tasks by name and path.
+_Avoid_: workstream, session (a harness session or conversation is not a Task)
 
-**Scratch location**: Where skills write temporary files. The `scratch/`
-directory of the active **Workstream** when there is one, otherwise the session
+**Scratch location**: Where skills write temporary files. The `.handoff/scratch/`
+directory of the active **Task** when there is one, otherwise the session
 scratchpad directory the harness provides, otherwise `$TMPDIR` (else `/tmp`).
 Never the repository workspace. Give the absolute path in full when telling the
 user where a file is.

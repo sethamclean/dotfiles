@@ -4,7 +4,7 @@ description: >-
   Compact the current conversation into a handoff document for another agent to
   pick up.
 disable-model-invocation: true
-argument-hint: '[workstream-name] [what the next conversation will focus on]'
+argument-hint: '[what the next conversation will focus on]'
 license: MIT. See sources.md
 metadata:
   source-repository: https://github.com/mattpocock/skills

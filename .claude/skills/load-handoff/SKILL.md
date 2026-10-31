@@ -1,10 +1,10 @@
 ---
 name: load-handoff
 description: >-
-  Resume work from a workstream's handoff: read it, check the linked git working
-  directories for drift, and report what to do next.
+  Resume work from a Task's handoff: read it, check the git working
+  directory for drift, and report what to do next.
 disable-model-invocation: true
-argument-hint: '[workstream-name]'
+argument-hint: '[task-name]'
 ---
 
 # load-handoff

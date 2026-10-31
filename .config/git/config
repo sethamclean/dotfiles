@@ -27,10 +27,12 @@
 	pager = delta
 
 [credential "https://gist.github.com"]
-	helper = !gh auth git-credential
+	helper = 
+	helper = !/nix/var/nix/profiles/per-user/seth/profile/bin/.gh-wrapped auth git-credential
 
 [credential "https://github.com"]
-	helper = !gh auth git-credential
+	helper = 
+	helper = !/nix/var/nix/profiles/per-user/seth/profile/bin/.gh-wrapped auth git-credential
 
 [delta]
 	commit-decoration-style = none
@@ -129,3 +131,9 @@
 # the file is missing.
 [include]
 	path = ~/.config/git/local.gitconfig
+
+# Repos whose remote is on the personal GitHub account use the noreply address,
+# which GitHub requires for pushes. This comes after the include above so it
+# overrides the work address.
+[includeIf "hasconfig:remote.*.url:https://github.com/sethamclean/**"]
+	path = ~/.config/git/personal.gitconfig

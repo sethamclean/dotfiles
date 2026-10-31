@@ -23,12 +23,12 @@ Copyright (c) 2026 Matt Pocock; full text [below](#license). Adapted:
   `argument-hint` and user-only invocation.
 - **Wording.** Upstream's sentences are kept, with the changes below.
 - **Location.** Upstream saves one file to the OS temporary directory. Here the
-  handoff is one living file in a **Workstream** directory, with `scratch/` and
-  `workdirs/` beside it. The skill finds or creates the workstream without
-  overwriting another one, links the git working directories involved, copies
-  referenced scratch files into the workstream, keeps the previous version of
-  the handoff in `scratch/`, and records each working directory's branch,
-  `HEAD`, and number of changed paths on one line in the handoff.
+  handoff is one living file, `.handoff/handoff.md`, in the root of the **Task**
+  (a git worktree, as `workmux` manages them), with `scratch/` beside it. The
+  skill excludes `.handoff/` from git, copies referenced scratch files into the
+  Task, keeps the previous version of the handoff in `scratch/`, and records the
+  Task's branch, `HEAD`, and number of changed paths on one line in the handoff.
+  Work across Tasks is listed by name and path only when the user asks for it.
 
 ## What was not carried over
 
