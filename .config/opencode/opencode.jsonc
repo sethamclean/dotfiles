@@ -11,6 +11,11 @@
     { "action": "read", "resource": "~/.claude/*", "effect": "allow" },
     { "action": "external_directory", "resource": "~/.llm-workstreams/*", "effect": "allow" },
     { "action": "read", "resource": "~/.llm-workstreams/*", "effect": "allow" },
+    // Shared engineering standards: a link into the IDEXX checkout (see bootstrap.sh).
+    { "action": "external_directory", "resource": "~/.config/coding-standards/*", "effect": "allow" },
+    { "action": "read", "resource": "~/.config/coding-standards/*", "effect": "allow" },
+    { "action": "external_directory", "resource": "/workspaces/is-devsecops-cloudstack/docs/engineering/*", "effect": "allow" },
+    { "action": "read", "resource": "/workspaces/is-devsecops-cloudstack/docs/engineering/*", "effect": "allow" },
   ],
   "agents": {
     "plan": {
