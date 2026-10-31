@@ -50,9 +50,12 @@ checkout state as authoritative evidence for the supplied diff.
 
 The standards reviewer finds the repository's standards from the repository
 root. If none of `CODING_STANDARDS.md`, `CONTRIBUTING.md`, and `AGENTS.md`
-exists, tell the user and ask whether to proceed against project contracts only,
-to provide a standards path, or to abort. Record the choice on the packet's
-`Standards:` line.
+exists, use `~/.config/coding-standards/coding-standards.md` and the supplements
+for the languages in the change from `~/.config/coding-standards/standards/`,
+and list those paths on the packet's `Standards:` line. If that path is missing
+or dangling, tell the user and ask whether to proceed against project contracts
+only, to provide a standards path, or to abort. Record the choice on the
+packet's `Standards:` line.
 
 Give the specification reviewer the agreed request, acceptance criteria, or
 specification path. Locate it in this order and record which source was used:

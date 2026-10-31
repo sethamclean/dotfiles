@@ -23,8 +23,8 @@ exist, and follow their links to the shared standards, the supplements for the
 languages in the change, and the owning project's documented contracts. Read
 scoped instructions that apply to the changed paths. Read surrounding
 implementation and tests as needed to understand guarantees. If the repository
-documents no standards, say so and review only against the project's own
-contracts.
+documents no standards, read the paths on the packet's `Standards:` line; if
+there are none, say so and review only against the project's own contracts.
 
 ## Assess the changed behavior
 

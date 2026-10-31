@@ -32,6 +32,13 @@ precedence where they conflict.
 - Write PR descriptions with the `pr` skill.
 - In `/workspaces/dotfiles`, follow `AGENTS.md` (stow and `dotfiles-switch`) before creating a worktree.
 
+## Coding Standards
+- When implementing or reviewing code, a repository's own standards (`CODING_STANDARDS.md`, `CONTRIBUTING.md`, `AGENTS.md`) take precedence.
+- Where a repository documents none, apply `~/.config/coding-standards/coding-standards.md` plus the supplement for each language in `~/.config/coding-standards/standards/` (`go`, `python`, `terraform`, `declarative-configuration`, `shell-and-actions`).
+- Requirements are violations; preferences are not. Cite the standard for each finding.
+- `~/.config/coding-standards/repository-rules.md` applies only inside the IDEXX `is-devsecops-cloudstack` repository.
+- That path is a symlink into a checkout. If it is missing or dangling, say so and continue against the project's own contracts.
+
 ## Evidence and Verification
 - Use evidence-first diagnosis: logs, statuses, diffs, and command output.
 - Separate observations from hypotheses; identify unknowns.
