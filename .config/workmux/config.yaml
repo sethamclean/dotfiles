@@ -2,3 +2,6 @@
 mode: session
 # Closing, removing or merging a worktree returns the client to this session.
 default_session: main
+# tmux.conf puts the agent status icon in window-status-format itself.
+status_format: false
+nerdfont: true
