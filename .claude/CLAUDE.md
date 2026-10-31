@@ -25,6 +25,13 @@ precedence where they conflict.
 - Do not use destructive git operations unless explicitly requested.
 - In dirty worktrees, isolate only relevant changes.
 
+## Parallel Work (workmux)
+- A Task is one `workmux` worktree (own branch and tmux session). Use the `workmux` skill for commands and `/worktree` to delegate.
+- Create or delegate to a worktree only when I ask. Cross-task work happens only when I say so.
+- Never run `workmux merge`, `workmux remove`/`rm`, or send instructions to another agent (`workmux send`) unless I ask. Merging and removal are irreversible and need the Git Safety approvals.
+- Write PR descriptions with the `pr` skill.
+- In `/workspaces/dotfiles`, follow `AGENTS.md` (stow and `dotfiles-switch`) before creating a worktree.
+
 ## Evidence and Verification
 - Use evidence-first diagnosis: logs, statuses, diffs, and command output.
 - Separate observations from hypotheses; identify unknowns.
