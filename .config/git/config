@@ -28,11 +28,11 @@
 
 [credential "https://gist.github.com"]
 	helper = 
-	helper = !/nix/var/nix/profiles/per-user/seth/profile/bin/.gh-wrapped auth git-credential
+	helper = !/home/seth/.nix-profile/bin/.gh-wrapped auth git-credential
 
 [credential "https://github.com"]
 	helper = 
-	helper = !/nix/var/nix/profiles/per-user/seth/profile/bin/.gh-wrapped auth git-credential
+	helper = !/home/seth/.nix-profile/bin/.gh-wrapped auth git-credential
 
 [delta]
 	commit-decoration-style = none
